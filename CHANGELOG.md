@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.2](https://github.com/mguleryuz/liquidcn/compare/v0.0.1...v0.0.2) (2025-12-16)
+
+### Features
+
+- add Slider component and update package.json to include @radix-ui/react-slider as a peer dependency ([e10b3f2](https://github.com/mguleryuz/liquidcn/commit/e10b3f29569be0e56f781cc184e6e941ee19bf75))
+
 ### 0.0.1 (2025-12-16)
 
 ### Features

@@ -17,7 +17,7 @@ A collection of reusable, accessible React UI components built with TypeScript, 
 **liquidcn** is a comprehensive component library featuring:
 
 - **UI Components**: Button, Card, Alert, Badge, Input, Textarea, Footer, PrettyAmount
-- **Client Components**: Dialog, Select, Switch, Tabs, Sonner (Toast), PrettyDate, ResizableNavbar
+- **Client Components**: Dialog, Select, Switch, Tabs, Sonner (Toast), PrettyDate, ResizableNavbar, Slider
 - **Hooks**: Custom React hooks including `useCookieWithFallback`
 - **Utilities**: `cn()` utility for className merging using clsx and tailwind-merge
 
