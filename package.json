@@ -51,8 +51,9 @@
     "typescript": "^5.8.0"
   },
   "dependencies": {
-    "type-fest-4": "npm:type-fest@latest",
-    "debug": "^4.4.1"
+    "debug": "^4.4.1",
+    "tanstack-effect": "^0.0.15",
+    "type-fest-4": "npm:type-fest@latest"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

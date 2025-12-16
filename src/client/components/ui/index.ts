@@ -1,4 +1,5 @@
 export * from './dialog'
+export * from './label'
 export * from './pretty-date'
 export * from './resizable-navbar'
 export * from './select'
