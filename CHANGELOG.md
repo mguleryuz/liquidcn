@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.3](https://github.com/mguleryuz/liquidcn/compare/v0.0.2...v0.0.3) (2025-12-16)
+
+### Features
+
+- implement FormBuilder component and related form utilities, enhancing form management capabilities ([5f8eaa9](https://github.com/mguleryuz/liquidcn/commit/5f8eaa9e6e71e3de1dbeb7d2a71e649fe65d1766))
+- introduce FormBuilder component and update exports in index files for improved form handling ([0892568](https://github.com/mguleryuz/liquidcn/commit/0892568e39d07a0ff5dc91a535d659a67f42cb7a))
+
 ### [0.0.2](https://github.com/mguleryuz/liquidcn/compare/v0.0.1...v0.0.2) (2025-12-16)
 
 ### Features
