@@ -10,12 +10,7 @@
       "import": "./src/index.ts",
       "types": "./src/index.ts"
     },
-    "./client": {
-      "require": "./src/client/index.ts",
-      "import": "./src/client/index.ts",
-      "types": "./src/client/index.ts"
-    },
-    "./styles.css": "./src/client/styles.css"
+    "./styles.css": "./src/styles.css"
   },
   "files": [
     "dist"
@@ -26,7 +21,7 @@
     "format": "prettier --write .",
     "lint": "eslint",
     "fill-placeholders": "sh ./script/fill-placeholders.sh",
-    "build": "bun build:cjs && bun build:esm && bun build:types && cp ./src/client/styles.css ./dist/styles.css",
+    "build": "bun build:cjs && bun build:esm && bun build:types && cp ./src/styles.css ./dist/styles.css",
     "build:cjs": "tsc --project ./tsconfig.cjs.json && tsc-alias --outDir ./dist/cjs && ts-add-js-extension --dir=dist/cjs --showprogress=false",
     "build:esm": "tsc --project ./tsconfig.esm.json && tsc-alias --outDir ./dist/esm && ts-add-js-extension --dir=dist/esm --showprogress=false",
     "build:types": "tsc --project ./tsconfig.types.json && tsc-alias --outDir ./dist/types",
