@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "<pkg_name>",
+      "name": "liquidcn",
       "dependencies": {
         "debug": "^4.4.1",
         "type-fest-4": "npm:type-fest@latest",
