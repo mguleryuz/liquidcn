@@ -1,7 +1,4 @@
-'use client'
-
 import { Heart } from 'lucide-react'
-import Link from 'next/link'
 import type { ComponentType, ReactNode } from 'react'
 
 export interface FooterLink {
@@ -31,7 +28,7 @@ export function Footer({
   builtByText = 'Built by',
   builtByBrand = 'Levr',
   showLogo = true,
-  linkComponent: LinkComponent = Link,
+  linkComponent: LinkComponent = ({ href, ...props }: any) => <a href={href} {...props} />,
 }: FooterProps) {
   return (
     <footer className="relative mt-auto">

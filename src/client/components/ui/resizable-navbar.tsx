@@ -5,8 +5,8 @@ import { Menu, X } from 'lucide-react'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react'
 import React, { useRef, useState } from 'react'
 
-import { cn } from '../utils'
-import { Button } from './button'
+import { Button } from '../../../components/ui/button'
+import { cn } from '../../../utils'
 
 interface NavbarProps {
   children: React.ReactNode

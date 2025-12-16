@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { cn } from '../utils'
+import { cn } from '../../utils'
 
 type GlassSize = 'sm' | 'md' | 'lg' | 'xl'
 type GlassTint = 'none' | 'light' | 'default' | 'dark'

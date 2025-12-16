@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import { cn } from '../utils'
-import type { PrettyAmountSize } from './pretty-amount'
+import type { PrettyAmountSize } from '../../../components/ui/pretty-amount'
+import { cn } from '../../../utils'
 
 type PrettyDateFormat = 'date' | 'time' | 'datetime' | 'countdown' | 'relative'
 

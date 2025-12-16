@@ -10,6 +10,11 @@
       "import": "./src/index.ts",
       "types": "./src/index.ts"
     },
+    "./client": {
+      "require": "./src/client/index.ts",
+      "import": "./src/client/index.ts",
+      "types": "./src/client/index.ts"
+    },
     "./styles.css": "./src/styles.css"
   },
   "files": [

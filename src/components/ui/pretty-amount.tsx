@@ -1,4 +1,4 @@
-import { cn } from '../utils'
+import { cn } from '../../utils'
 
 type PrettyAmountSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl'
 
