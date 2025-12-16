@@ -14,7 +14,8 @@
       "require": "./src/client/index.ts",
       "import": "./src/client/index.ts",
       "types": "./src/client/index.ts"
-    }
+    },
+    "./styles.css": "./src/client/styles.css"
   },
   "files": [
     "dist"
@@ -25,7 +26,7 @@
     "format": "prettier --write .",
     "lint": "eslint",
     "fill-placeholders": "sh ./script/fill-placeholders.sh",
-    "build": "bun build:cjs && bun build:esm && bun build:types",
+    "build": "bun build:cjs && bun build:esm && bun build:types && cp ./src/client/styles.css ./dist/styles.css",
     "build:cjs": "tsc --project ./tsconfig.cjs.json && tsc-alias --outDir ./dist/cjs && ts-add-js-extension --dir=dist/cjs --showprogress=false",
     "build:esm": "tsc --project ./tsconfig.esm.json && tsc-alias --outDir ./dist/esm && ts-add-js-extension --dir=dist/esm --showprogress=false",
     "build:types": "tsc --project ./tsconfig.types.json && tsc-alias --outDir ./dist/types",
@@ -83,5 +84,18 @@
     "ethereum",
     "solidity",
     "evm"
-  ]
+  ],
+  "peerDependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.561.0",
+    "react": "^19.2.3",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0"
+  }
 }

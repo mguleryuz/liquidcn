@@ -1,0 +1,563 @@
+/* ===== Glass Effect Utility Classes ===== */
+
+/* Base glass wrapper - apply to container element */
+.glass {
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+}
+
+/* Glass layers container - use as first child inside .glass */
+.glass-layers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+/* Size variants - backdrop blur + saturation + wrapper shadow */
+.glass-sm {
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.3),
+    inset 0 -0.5px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-sm {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -0.5px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.glass-md {
+  backdrop-filter: blur(32px) saturate(1.15);
+  -webkit-backdrop-filter: blur(32px) saturate(1.15);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-md {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.glass-lg {
+  backdrop-filter: blur(48px) saturate(1.2);
+  -webkit-backdrop-filter: blur(48px) saturate(1.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-lg {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.glass-xl {
+  backdrop-filter: blur(80px) saturate(1.6);
+  -webkit-backdrop-filter: blur(80px) saturate(1.6);
+  background: oklch(from var(--background) l c h / 0.75);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-xl {
+  background: oklch(from var(--background) l c h / 0.7);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Tint overlays - apply to glass-layers element */
+.glass-tint-none {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.dark .glass-tint-none {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.glass-tint-light {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dark .glass-tint-light {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.glass-tint-default {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .glass-tint-default {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.glass-tint-dark {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass-tint-dark {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Refraction effect - use ::before on glass-layers */
+.glass-refraction::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 20%,
+      transparent 80%,
+      rgba(255, 255, 255, 0.03) 100%
+    ),
+    radial-gradient(ellipse 50% 30% at 10% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 30% at 90% 100%, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+}
+
+/* Texture effect - use ::after on glass-layers */
+.glass-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.01) 2px,
+      rgba(255, 255, 255, 0.01) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.01) 2px,
+      rgba(255, 255, 255, 0.01) 4px
+    );
+}
+
+/* Glass content layer - use for content inside glass */
+.glass-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================================================
+     Liquid Glass - Shared Heavy Distortion Effect
+     ============================================================================ */
+
+.liquid-glass {
+  overflow: hidden;
+  backdrop-filter: blur(200px) saturate(2) contrast(1.1);
+  -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1);
+  background-color: oklch(0.9653 0.0069 247.8959 / 0.82);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 2px 0 4px -2px rgba(255, 255, 255, 0.5),
+    inset -2px 0 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .liquid-glass {
+  background-color: oklch(0.2765 0.1258 263.68 / 0.82);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 0 4px -2px rgba(255, 255, 255, 0.15),
+    inset -2px 0 4px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Refraction shimmer overlay - use ::before on liquid-glass elements */
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 10%,
+      transparent 20%,
+      transparent 80%,
+      rgba(255, 255, 255, 0.15) 95%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+  mix-blend-mode: overlay;
+}
+
+.dark .liquid-glass::before {
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.15) 10%,
+      transparent 20%,
+      transparent 80%,
+      rgba(255, 255, 255, 0.08) 95%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(255, 255, 255, 0.06) 0%, transparent 60%);
+}
+
+/* Content layer for liquid-glass - ensures content is above refraction */
+.liquid-glass-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* Liquid glass top border only - for footers/sections */
+.liquid-glass-border {
+  position: absolute;
+  inset: 0 0 0 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.9653 0.0069 247.8959 / 0.3) 10%,
+    oklch(0.9653 0.0069 247.8959 / 0.6) 30%,
+    oklch(1 0 0 / 0.8) 50%,
+    oklch(0.9653 0.0069 247.8959 / 0.6) 70%,
+    oklch(0.9653 0.0069 247.8959 / 0.3) 90%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 20px 2px oklch(0.9653 0.0069 247.8959 / 0.15),
+    0 0 40px 4px oklch(0.9653 0.0069 247.8959 / 0.1);
+}
+
+.dark .liquid-glass-border {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.5 0.15 260 / 0.3) 10%,
+    oklch(0.6 0.18 260 / 0.5) 30%,
+    oklch(0.7 0.2 260 / 0.7) 50%,
+    oklch(0.6 0.18 260 / 0.5) 70%,
+    oklch(0.5 0.15 260 / 0.3) 90%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 20px 2px oklch(0.6 0.18 260 / 0.2),
+    0 0 40px 4px oklch(0.6 0.18 260 / 0.1);
+}
+
+/* ============================================================================
+     RainbowKit Liquid Glass Styles
+     ============================================================================ */
+
+/* Modal - uses shared liquid-glass effect */
+[data-rk] [role='dialog'] > div {
+  backdrop-filter: blur(200px) saturate(2) contrast(1.1);
+  -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1);
+  background-color: oklch(0.9653 0.0069 247.8959 / 0.82);
+  border-radius: 1rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08);
+}
+
+.dark [data-rk] [role='dialog'] > div {
+  background-color: oklch(0.2765 0.1258 263.68 / 0.82);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+     Sonner Toast Liquid Glass Styles
+     ============================================================================ */
+
+/* Base liquid-glass effect for all toasts */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass {
+  position: relative !important;
+  overflow: hidden !important;
+  border: none !important;
+  backdrop-filter: blur(200px) saturate(2) contrast(1.1) !important;
+  -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1) !important;
+  background-color: oklch(0.9653 0.0069 247.8959 / 0.85) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 2px 0 4px -2px rgba(255, 255, 255, 0.5),
+    inset -2px 0 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass {
+  background-color: oklch(0.2765 0.1258 263.68 / 0.85) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 0 4px -2px rgba(255, 255, 255, 0.15),
+    inset -2px 0 4px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Refraction shimmer overlay for toasts */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 10%,
+      transparent 20%,
+      transparent 80%,
+      rgba(255, 255, 255, 0.15) 95%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(255, 255, 255, 0.15) 0%, transparent 60%) !important;
+  mix-blend-mode: overlay !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass::before {
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.15) 10%,
+      transparent 20%,
+      transparent 80%,
+      rgba(255, 255, 255, 0.08) 95%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(255, 255, 255, 0.06) 0%, transparent 60%) !important;
+}
+
+/* Toast text colors for better contrast on glass */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-title] {
+  position: relative !important;
+  z-index: 2 !important;
+  color: oklch(0.2093 0.0381 251.4803) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-description] {
+  position: relative !important;
+  z-index: 2 !important;
+  color: oklch(0.5544 0.0407 257.4166) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-title] {
+  color: oklch(0.9288 0.0126 255.5078) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-description] {
+  color: oklch(0.8107 0.0351 256.7878) !important;
+}
+
+/* Toast icon container - ensure above refraction */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-icon] {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Toast close button - ensure above refraction */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-close-button] {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Toast action buttons - ensure above refraction with glass style */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-button] {
+  position: relative !important;
+  z-index: 2 !important;
+  backdrop-filter: blur(20px) !important;
+  background-color: oklch(0.9653 0.0069 247.8959 / 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-button] {
+  background-color: oklch(0.2765 0.1258 263.68 / 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===== Type-specific accent glow effects ===== */
+
+/* Success toast - green glow accent */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='success'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px oklch(0.7 0.2 145 / 0.5),
+    0 0 20px oklch(0.7 0.2 145 / 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 3px 0 8px -2px oklch(0.7 0.2 145 / 0.25) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='success'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px oklch(0.7 0.2 145 / 0.4),
+    0 0 25px oklch(0.7 0.2 145 / 0.2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 3px 0 8px -2px oklch(0.7 0.2 145 / 0.35) !important;
+}
+
+/* Error toast - red glow accent */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='error'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px oklch(0.6368 0.2078 25.3313 / 0.5),
+    0 0 20px oklch(0.6368 0.2078 25.3313 / 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 3px 0 8px -2px oklch(0.6368 0.2078 25.3313 / 0.25) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='error'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px oklch(0.6368 0.2078 25.3313 / 0.4),
+    0 0 25px oklch(0.6368 0.2078 25.3313 / 0.2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 3px 0 8px -2px oklch(0.6368 0.2078 25.3313 / 0.35) !important;
+}
+
+/* Warning toast - amber glow accent */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='warning'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px oklch(0.8 0.15 80 / 0.5),
+    0 0 20px oklch(0.8 0.15 80 / 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 3px 0 8px -2px oklch(0.8 0.15 80 / 0.25) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='warning'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px oklch(0.8 0.15 80 / 0.4),
+    0 0 25px oklch(0.8 0.15 80 / 0.2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 3px 0 8px -2px oklch(0.8 0.15 80 / 0.35) !important;
+}
+
+/* Info toast - blue glow accent (uses primary color) */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='info'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.5),
+    0 0 20px oklch(0.6231 0.188 259.8145 / 0.15),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08),
+    inset 3px 0 8px -2px oklch(0.6231 0.188 259.8145 / 0.25) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='info'] {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.4),
+    0 0 25px oklch(0.6231 0.188 259.8145 / 0.2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3),
+    inset 3px 0 8px -2px oklch(0.6231 0.188 259.8145 / 0.35) !important;
+}
+
+/* Loading toast - subtle pulsing glow */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='loading'] {
+  animation: toast-loading-pulse 2s ease-in-out infinite !important;
+}
+
+@keyframes toast-loading-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.18),
+      0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.3),
+      0 0 15px oklch(0.6231 0.188 259.8145 / 0.1),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.18),
+      0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.5),
+      0 0 25px oklch(0.6231 0.188 259.8145 / 0.2),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.08);
+  }
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast].liquid-glass[data-type='loading'] {
+  animation: toast-loading-pulse-dark 2s ease-in-out infinite !important;
+}
+
+@keyframes toast-loading-pulse-dark {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.3),
+      0 0 15px oklch(0.6231 0.188 259.8145 / 0.15),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      0 0 0 1px oklch(0.6231 0.188 259.8145 / 0.5),
+      0 0 30px oklch(0.6231 0.188 259.8145 / 0.25),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3);
+  }
+}
