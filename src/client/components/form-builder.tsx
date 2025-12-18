@@ -11,11 +11,25 @@ import { useState } from 'react'
 import type {
   FormBuilderProps,
   FormFieldDefinition,
-  FormFieldProps,
+  FormFieldProps as BaseFormFieldProps,
   NestedFormProps,
   UseSchemaFormReturn,
 } from 'tanstack-effect'
 import { formatLabel, getNestedValue } from 'tanstack-effect'
+
+/**
+ * Extended FormFieldProps with optional label parser for transforming display labels
+ */
+export interface FormFieldProps extends BaseFormFieldProps {
+  /**
+   * Optional function to transform how literal option values are displayed.
+   * Receives the raw option value and returns the display label.
+   * @example
+   * // Transform "0.1 ETH" to "0.1 BNB" for BNB chain
+   * labelParser={(value) => value.replace(' ETH', ' BNB')}
+   */
+  labelParser?: (value: string) => string
+}
 
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
 import { Badge } from '../../components/ui/badge'
@@ -31,7 +45,14 @@ import { Switch } from './ui/switch'
 /**
  * Individual form field component
  */
-export function FormField({ field, value, onChange, error, minimal = false }: FormFieldProps) {
+export function FormField({
+  field,
+  value,
+  onChange,
+  error,
+  minimal = false,
+  labelParser,
+}: FormFieldProps) {
   const [showDescription, setShowDescription] = useState(true)
 
   // Guard against undefined field
@@ -88,7 +109,10 @@ export function FormField({ field, value, onChange, error, minimal = false }: Fo
           </div>
         )
 
-      case 'literal':
+      case 'literal': {
+        const parseLabel = (val: string) => (labelParser ? labelParser(val) : val)
+        // When labelParser is provided and value exists, show custom display
+        const hasCustomDisplay = labelParser && value
         return (
           <div className="flex gap-2">
             <Select
@@ -109,7 +133,18 @@ export function FormField({ field, value, onChange, error, minimal = false }: Fo
               }}
             >
               <SelectTrigger className={cn('flex-1', error && 'border-red-500')}>
-                <SelectValue placeholder="Select an option..." />
+                {hasCustomDisplay ? (
+                  <>
+                    {/* Hidden SelectValue keeps Radix working */}
+                    <span className="sr-only">
+                      <SelectValue placeholder="Select an option..." />
+                    </span>
+                    {/* Custom display when labelParser transforms the value */}
+                    <span data-slot="select-value">{parseLabel(value.toString())}</span>
+                  </>
+                ) : (
+                  <SelectValue placeholder="Select an option..." />
+                )}
               </SelectTrigger>
               <SelectContent position="item-aligned" className="h-max w-max">
                 {!field.required && (
@@ -119,13 +154,14 @@ export function FormField({ field, value, onChange, error, minimal = false }: Fo
                 )}
                 {(field.literalOptions || []).map((option) => (
                   <SelectItem key={option?.toString()} value={option?.toString()}>
-                    {option?.toString()}
+                    {parseLabel(option?.toString() ?? '')}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         )
+      }
 
       default:
         return null
