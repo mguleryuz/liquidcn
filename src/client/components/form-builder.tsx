@@ -18,7 +18,7 @@ import type {
 import { formatLabel, getNestedValue } from 'tanstack-effect'
 
 /**
- * Extended FormFieldProps with optional label parser for transforming display labels
+ * Extended FormFieldProps with optional label parser and custom options
  */
 export interface FormFieldProps extends BaseFormFieldProps {
   /**
@@ -29,6 +29,15 @@ export interface FormFieldProps extends BaseFormFieldProps {
    * labelParser={(value) => value.replace(' ETH', ' BNB')}
    */
   labelParser?: (value: string) => string
+  /**
+   * Optional custom options to override field.literalOptions.
+   * Use this when you need to dynamically provide options based on context (e.g., chain).
+   * When provided, this will be used instead of field.literalOptions for select fields.
+   * @example
+   * // Chain-specific paired token options
+   * options={['ETH', 'USDC', 'DAI']}
+   */
+  options?: string[]
 }
 
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
@@ -52,6 +61,7 @@ export function FormField({
   error,
   minimal = false,
   labelParser,
+  options: customOptions,
 }: FormFieldProps) {
   const [showDescription, setShowDescription] = useState(true)
 
@@ -62,7 +72,66 @@ export function FormField({
 
   const I = minimal ? Input : Textarea
 
+  // Determine if we should render as a select (either literal type or has custom options)
+  const shouldRenderAsSelect =
+    field.type === 'literal' || (field.type === 'string' && customOptions)
+  const selectOptions = customOptions || field.literalOptions || []
+
   const renderField = () => {
+    // Handle custom options for string fields - render as select
+    if (shouldRenderAsSelect && selectOptions.length > 0) {
+      const parseLabel = (val: string) => (labelParser ? labelParser(val) : val)
+      // When labelParser is provided and value exists, show custom display
+      const hasCustomDisplay = labelParser && value
+      return (
+        <div className="flex gap-2">
+          <Select
+            value={value?.toString() || ''}
+            onValueChange={(selectedValue) => {
+              // Handle clearing the value
+              if (selectedValue === '__clear__') {
+                onChange(undefined)
+                return
+              }
+              // Find and set the exact option value from options
+              const selectedOption = selectOptions.find(
+                (option) => option?.toString() === selectedValue
+              )
+              // Always use the original option value to preserve type
+              onChange(selectedOption !== undefined ? selectedOption : selectedValue)
+            }}
+          >
+            <SelectTrigger className={cn('flex-1', error && 'border-red-500')}>
+              {hasCustomDisplay ? (
+                <>
+                  {/* Hidden SelectValue keeps Radix working */}
+                  <span className="sr-only">
+                    <SelectValue placeholder="Select an option..." />
+                  </span>
+                  {/* Custom display when labelParser transforms the value */}
+                  <span data-slot="select-value">{parseLabel(value.toString())}</span>
+                </>
+              ) : (
+                <SelectValue placeholder="Select an option..." />
+              )}
+            </SelectTrigger>
+            <SelectContent position="item-aligned" className="h-max w-max">
+              {!field.required && (
+                <SelectItem value="__clear__" className="italic">
+                  (None)
+                </SelectItem>
+              )}
+              {selectOptions.map((option) => (
+                <SelectItem key={option?.toString()} value={option?.toString()}>
+                  {parseLabel(option?.toString() ?? '')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    }
+
     switch (field.type) {
       case 'string':
         return (
@@ -110,57 +179,9 @@ export function FormField({
         )
 
       case 'literal': {
-        const parseLabel = (val: string) => (labelParser ? labelParser(val) : val)
-        // When labelParser is provided and value exists, show custom display
-        const hasCustomDisplay = labelParser && value
-        return (
-          <div className="flex gap-2">
-            <Select
-              value={value?.toString() || ''}
-              onValueChange={(selectedValue) => {
-                // Handle clearing the value
-                if (selectedValue === '__clear__') {
-                  onChange(undefined)
-                  return
-                }
-                // Find and set the exact option value from literalOptions
-                const options = field.literalOptions || []
-                const selectedOption = options.find(
-                  (option) => option?.toString() === selectedValue
-                )
-                // Always use the original option value to preserve type
-                onChange(selectedOption !== undefined ? selectedOption : selectedValue)
-              }}
-            >
-              <SelectTrigger className={cn('flex-1', error && 'border-red-500')}>
-                {hasCustomDisplay ? (
-                  <>
-                    {/* Hidden SelectValue keeps Radix working */}
-                    <span className="sr-only">
-                      <SelectValue placeholder="Select an option..." />
-                    </span>
-                    {/* Custom display when labelParser transforms the value */}
-                    <span data-slot="select-value">{parseLabel(value.toString())}</span>
-                  </>
-                ) : (
-                  <SelectValue placeholder="Select an option..." />
-                )}
-              </SelectTrigger>
-              <SelectContent position="item-aligned" className="h-max w-max">
-                {!field.required && (
-                  <SelectItem value="__clear__" className="italic">
-                    (None)
-                  </SelectItem>
-                )}
-                {(field.literalOptions || []).map((option) => (
-                  <SelectItem key={option?.toString()} value={option?.toString()}>
-                    {parseLabel(option?.toString() ?? '')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )
+        // This case is now handled above with shouldRenderAsSelect
+        // Keeping for safety in case selectOptions is empty
+        return null
       }
 
       default:
