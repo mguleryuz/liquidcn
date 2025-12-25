@@ -28,16 +28,20 @@ function Tabs({
 
   // Sync with URL on mount and popstate (browser back/forward)
   React.useEffect(() => {
-    if (!queryKey) return
+    if (!queryKey || typeof window === 'undefined') return
 
-    const handlePopState = () => {
+    const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search)
       const urlValue = params.get(queryKey) || defaultValue
       setInternalValue(urlValue)
     }
 
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    // Sync on mount (handles SSR hydration and client-side navigation)
+    syncFromUrl()
+
+    // Sync on popstate (browser back/forward)
+    window.addEventListener('popstate', syncFromUrl)
+    return () => window.removeEventListener('popstate', syncFromUrl)
   }, [queryKey, defaultValue])
 
   const handleValueChange = React.useCallback(
