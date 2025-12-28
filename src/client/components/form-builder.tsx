@@ -18,17 +18,14 @@ import type {
 import { formatLabel, getNestedValue } from 'tanstack-effect'
 
 /**
- * Extended FormFieldProps with optional label parser and custom options
+ * Translation resolver function type
+ */
+export type TranslationResolver = (fieldPath: string) => { label?: string; description?: string }
+
+/**
+ * Extended FormFieldProps with optional overrides
  */
 export interface FormFieldProps extends BaseFormFieldProps {
-  /**
-   * Optional function to transform how literal option values are displayed.
-   * Receives the raw option value and returns the display label.
-   * @example
-   * // Transform "0.1 ETH" to "0.1 BNB" for BNB chain
-   * labelParser={(value) => value.replace(' ETH', ' BNB')}
-   */
-  labelParser?: (value: string) => string
   /**
    * Optional custom options to override field.literalOptions.
    * Use this when you need to dynamically provide options based on context (e.g., chain).
@@ -38,6 +35,21 @@ export interface FormFieldProps extends BaseFormFieldProps {
    * options={['ETH', 'USDC', 'DAI']}
    */
   options?: string[]
+  /**
+   * Optional label override. When provided, this will be used instead of field.label.
+   * Useful for i18n translations.
+   */
+  label?: string
+  /**
+   * Optional description override. When provided, this will be used instead of field.description.
+   * Useful for i18n translations.
+   */
+  description?: string
+  /**
+   * Optional translation resolver function. When provided, this will be called with the field path
+   * to get translated label and description. Used for nested fields in FormSection.
+   */
+  getTranslation?: TranslationResolver
 }
 
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
@@ -60,10 +72,19 @@ export function FormField({
   onChange,
   error,
   minimal = false,
-  labelParser,
   options: customOptions,
+  label: labelOverride,
+  description: descriptionOverride,
+  getTranslation,
 }: FormFieldProps) {
   const [showDescription, setShowDescription] = useState(true)
+
+  // Get translations from resolver if provided
+  const translations = getTranslation ? getTranslation(field?.key || '') : undefined
+
+  // Use overrides if provided, otherwise fall back to translations, then field values
+  const displayLabel = labelOverride ?? translations?.label ?? field?.label
+  const displayDescription = descriptionOverride ?? translations?.description ?? field?.description
 
   // Guard against undefined field
   if (!field) {
@@ -80,9 +101,6 @@ export function FormField({
   const renderField = () => {
     // Handle custom options for string fields - render as select
     if (shouldRenderAsSelect && selectOptions.length > 0) {
-      const parseLabel = (val: string) => (labelParser ? labelParser(val) : val)
-      // When labelParser is provided and value exists, show custom display
-      const hasCustomDisplay = labelParser && value
       return (
         <div className="flex gap-2">
           <Select
@@ -102,18 +120,7 @@ export function FormField({
             }}
           >
             <SelectTrigger className={cn('flex-1', error && 'border-red-500')}>
-              {hasCustomDisplay ? (
-                <>
-                  {/* Hidden SelectValue keeps Radix working */}
-                  <span className="sr-only">
-                    <SelectValue placeholder="Select an option..." />
-                  </span>
-                  {/* Custom display when labelParser transforms the value */}
-                  <span data-slot="select-value">{parseLabel(value.toString())}</span>
-                </>
-              ) : (
-                <SelectValue placeholder="Select an option..." />
-              )}
+              <SelectValue placeholder="Select an option..." />
             </SelectTrigger>
             <SelectContent position="item-aligned" className="h-max w-max">
               {!field.required && (
@@ -123,7 +130,7 @@ export function FormField({
               )}
               {selectOptions.map((option) => (
                 <SelectItem key={option?.toString()} value={option?.toString()}>
-                  {parseLabel(option?.toString() ?? '')}
+                  {option?.toString() ?? ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -196,14 +203,14 @@ export function FormField({
           htmlFor={field.key}
           className={cn('min-w-0 flex-1 text-xs sm:text-sm', field.required && 'font-semibold')}
         >
-          <span className="break-words">{field.label || formatLabel(field.key)}</span>
+          <span className="break-words">{displayLabel || formatLabel(field.key)}</span>
           {field.required ? (
             <span className="text-destructive">*</span>
           ) : (
             <span className="text-muted-foreground ml-1 text-[10px]">(optional)</span>
           )}
         </Label>
-        {field.description && (
+        {displayDescription && (
           <Button
             variant="ghost"
             size="sm"
@@ -217,8 +224,8 @@ export function FormField({
         )}
       </div>
 
-      {showDescription && field.description && (
-        <p className="text-muted-foreground text-xs sm:text-sm">{field.description}</p>
+      {showDescription && displayDescription && (
+        <p className="text-muted-foreground text-xs sm:text-sm">{displayDescription}</p>
       )}
 
       <div className="w-full">{renderField()}</div>
@@ -546,17 +553,48 @@ export function DiscriminatedUnionSection({
 }
 
 /**
+ * Extended NestedFormProps with optional label and description overrides
+ */
+export interface FormSectionProps<T = unknown> extends NestedFormProps<T> {
+  /**
+   * Optional label override. When provided, this will be used instead of field.label.
+   * Useful for i18n translations.
+   */
+  label?: string
+  /**
+   * Optional description override. When provided, this will be used instead of field.description.
+   * Useful for i18n translations.
+   */
+  description?: string
+  /**
+   * Optional translation resolver function. When provided, this will be called with the field path
+   * to get translated label and description for nested fields.
+   */
+  getTranslation?: TranslationResolver
+}
+
+/**
  * Recursive form section component for objects and arrays
  */
-export function FormSection<T = any>({
+export function FormSection<T = unknown>({
   field,
   form,
   basePath,
   level = 0,
   initialCollapsed = false,
   minimal = false,
-}: NestedFormProps<T>) {
+  label: labelOverride,
+  description: descriptionOverride,
+  getTranslation,
+}: FormSectionProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(level > 2 ? true : initialCollapsed)
+
+  // Get translations from resolver if provided
+  const translations = getTranslation ? getTranslation(basePath || '') : undefined
+
+  // Use overrides if provided, otherwise fall back to translations, then field values
+  const displayLabel = labelOverride ?? translations?.label ?? field?.label
+  const displayDescription = descriptionOverride ?? translations?.description ?? field?.description
 
   // Guard against undefined field
   if (!field) return null
@@ -622,6 +660,7 @@ export function FormSection<T = any>({
               level={level + 1}
               initialCollapsed={itemIndex !== undefined}
               minimal={minimal}
+              getTranslation={getTranslation}
             />
           )
         }
@@ -634,6 +673,7 @@ export function FormSection<T = any>({
             onChange={(value) => form.updateField(fullPath, value)}
             error={form.validationErrors[fullPath]}
             minimal={minimal}
+            getTranslation={getTranslation}
           />
         )
       })
@@ -650,7 +690,7 @@ export function FormSection<T = any>({
             <ChevronDown className="h-4 w-4 shrink-0" />
           )}
           <CardTitle className="min-w-0 flex-1 text-sm sm:text-base">
-            <span className="truncate">{field.label || formatLabel(field.key)}</span>
+            <span className="truncate">{displayLabel || formatLabel(field.key)}</span>
             {isArray && (
               <Badge variant="outline" className="ml-2 text-xs">
                 {(sectionValue as any[]).length} items
@@ -688,8 +728,8 @@ export function FormSection<T = any>({
           )}
         </div>
       </div>
-      {field.description && (
-        <p className="text-muted-foreground mt-2 text-xs sm:text-sm">{field.description}</p>
+      {displayDescription && (
+        <p className="text-muted-foreground mt-2 text-xs sm:text-sm">{displayDescription}</p>
       )}
     </>
   )
