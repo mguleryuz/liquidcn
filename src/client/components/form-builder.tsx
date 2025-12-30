@@ -18,9 +18,19 @@ import type {
 import { formatLabel, getNestedValue } from 'tanstack-effect'
 
 /**
- * Translation resolver function type
+ * Field metadata returned by the resolver
  */
-export type TranslationResolver = (fieldPath: string) => { label?: string; description?: string }
+export interface FieldMeta {
+  label?: string
+  description?: string
+}
+
+/**
+ * Field metadata resolver function type.
+ * Used to dynamically resolve field labels and descriptions based on field path.
+ * Common use cases: i18n translations, dynamic labels, context-aware descriptions.
+ */
+export type FieldMetaResolver = (fieldPath: string) => FieldMeta | undefined
 
 /**
  * Extended FormFieldProps with optional overrides
@@ -37,19 +47,20 @@ export interface FormFieldProps extends BaseFormFieldProps {
   options?: string[]
   /**
    * Optional label override. When provided, this will be used instead of field.label.
-   * Useful for i18n translations.
    */
   label?: string
   /**
    * Optional description override. When provided, this will be used instead of field.description.
-   * Useful for i18n translations.
    */
   description?: string
   /**
-   * Optional translation resolver function. When provided, this will be called with the field path
-   * to get translated label and description. Used for nested fields in FormSection.
+   * Optional field metadata resolver. When provided, this will be called with the field path
+   * to get label and description. Used for nested fields in FormSection.
+   * @example
+   * // i18n translation resolver
+   * getFieldMeta={(path) => ({ label: t(`fields.${path}.label`), description: t(`fields.${path}.description`) })}
    */
-  getTranslation?: TranslationResolver
+  getFieldMeta?: FieldMetaResolver
 }
 
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
@@ -75,16 +86,16 @@ export function FormField({
   options: customOptions,
   label: labelOverride,
   description: descriptionOverride,
-  getTranslation,
+  getFieldMeta,
 }: FormFieldProps) {
   const [showDescription, setShowDescription] = useState(true)
 
-  // Get translations from resolver if provided
-  const translations = getTranslation ? getTranslation(field?.key || '') : undefined
+  // Get field metadata from resolver if provided
+  const fieldMeta = getFieldMeta?.(field?.key || '')
 
-  // Use overrides if provided, otherwise fall back to translations, then field values
-  const displayLabel = labelOverride ?? translations?.label ?? field?.label
-  const displayDescription = descriptionOverride ?? translations?.description ?? field?.description
+  // Use overrides if provided, otherwise fall back to resolved metadata, then field values
+  const displayLabel = labelOverride ?? fieldMeta?.label ?? field?.label
+  const displayDescription = descriptionOverride ?? fieldMeta?.description ?? field?.description
 
   // Guard against undefined field
   if (!field) {
@@ -414,20 +425,52 @@ export function createDefaultItem(children: Record<string, any>) {
 }
 
 /**
+ * Props for DiscriminatedUnionSection
+ */
+export interface DiscriminatedUnionSectionProps {
+  field: FormFieldDefinition
+  form: UseSchemaFormReturn<any>
+  minimal?: boolean
+  /**
+   * Base path for the union (e.g., "fees")
+   */
+  basePath?: string
+  /**
+   * Optional label override
+   */
+  label?: string
+  /**
+   * Optional description override
+   */
+  description?: string
+  /**
+   * Optional field metadata resolver function
+   */
+  getFieldMeta?: FieldMetaResolver
+}
+
+/**
  * Discriminated union section component
  */
 export function DiscriminatedUnionSection({
   field,
   form,
   minimal = false,
-}: {
-  field: FormFieldDefinition
-  form: UseSchemaFormReturn<any>
-  minimal?: boolean
-}) {
+  basePath,
+  label: labelOverride,
+  description: descriptionOverride,
+  getFieldMeta,
+}: DiscriminatedUnionSectionProps) {
   // Guard against undefined field
   if (!field) return null
   if (!field.children) return null
+
+  // Use base path or field key
+  const sectionPath = basePath || field.key
+
+  // Use overrides if provided, otherwise fall back to field values
+  const displayLabel = labelOverride ?? field.label
+  const displayDescription = descriptionOverride ?? field.description
 
   // Find the discriminant field (usually 'type')
   const discriminantEntry = Object.entries(field.children).find(
@@ -440,6 +483,10 @@ export function DiscriminatedUnionSection({
 
   const [discriminantKey, discriminantField] = discriminantEntry as [string, FormFieldDefinition]
   const discriminantPath = discriminantKey
+
+  // Get metadata for discriminant field
+  const discriminantMetaPath = `${sectionPath}.${discriminantKey.split('.').pop()}`
+  const discriminantMeta = getFieldMeta?.(discriminantMetaPath)
 
   // Get union type options and their fields
   const unionTypes = Object.entries(field.children)
@@ -482,10 +529,10 @@ export function DiscriminatedUnionSection({
     <Card className="border-l-4 border-l-primary">
       <CardHeader>
         <CardTitle className="text-sm sm:text-base">
-          {field.label || formatLabel(field.key)}
-          {field.description && (
+          {displayLabel || formatLabel(field.key)}
+          {displayDescription && (
             <p className="text-muted-foreground mt-2 text-xs sm:text-sm font-normal">
-              {field.description}
+              {displayDescription}
             </p>
           )}
         </CardTitle>
@@ -494,7 +541,7 @@ export function DiscriminatedUnionSection({
         {/* Type Selection */}
         <div className="space-y-2">
           <Label className="text-xs sm:text-sm font-semibold">
-            {discriminantField.label || formatLabel(discriminantKey)}
+            {discriminantMeta?.label || discriminantField.label || formatLabel(discriminantKey)}
             {discriminantField.required && <span className="text-destructive">*</span>}
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -515,11 +562,18 @@ export function DiscriminatedUnionSection({
               )
             })}
           </div>
-          {selectedType && discriminantField.literalOptionsDescriptions?.[String(selectedType)] && (
+          {discriminantMeta?.description && (
             <p className="text-muted-foreground text-xs sm:text-sm border-l-2 border-primary pl-2">
-              {discriminantField.literalOptionsDescriptions[String(selectedType)]}
+              {discriminantMeta.description}
             </p>
           )}
+          {!discriminantMeta?.description &&
+            selectedType &&
+            discriminantField.literalOptionsDescriptions?.[String(selectedType)] && (
+              <p className="text-muted-foreground text-xs sm:text-sm border-l-2 border-primary pl-2">
+                {discriminantField.literalOptionsDescriptions[String(selectedType)]}
+              </p>
+            )}
         </div>
 
         {/* Conditional Fields */}
@@ -534,6 +588,11 @@ export function DiscriminatedUnionSection({
                 return null
               }
 
+              // Get metadata for conditional field
+              const fieldName = conditionalField.key.split('.').pop() || conditionalField.key
+              const metaPath = `${sectionPath}.${fieldName}`
+              const conditionalMeta = getFieldMeta?.(metaPath)
+
               return (
                 <FormField
                   key={fullPath}
@@ -542,6 +601,9 @@ export function DiscriminatedUnionSection({
                   onChange={(value) => form.updateField(fullPath, value)}
                   error={form.validationErrors[fullPath]}
                   minimal={minimal}
+                  label={conditionalMeta?.label}
+                  description={conditionalMeta?.description}
+                  getFieldMeta={getFieldMeta}
                 />
               )
             })}
@@ -558,19 +620,17 @@ export function DiscriminatedUnionSection({
 export interface FormSectionProps<T = unknown> extends NestedFormProps<T> {
   /**
    * Optional label override. When provided, this will be used instead of field.label.
-   * Useful for i18n translations.
    */
   label?: string
   /**
    * Optional description override. When provided, this will be used instead of field.description.
-   * Useful for i18n translations.
    */
   description?: string
   /**
-   * Optional translation resolver function. When provided, this will be called with the field path
-   * to get translated label and description for nested fields.
+   * Optional field metadata resolver. When provided, this will be called with the field path
+   * to get label and description for nested fields.
    */
-  getTranslation?: TranslationResolver
+  getFieldMeta?: FieldMetaResolver
 }
 
 /**
@@ -585,16 +645,16 @@ export function FormSection<T = unknown>({
   minimal = false,
   label: labelOverride,
   description: descriptionOverride,
-  getTranslation,
+  getFieldMeta,
 }: FormSectionProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(level > 2 ? true : initialCollapsed)
 
-  // Get translations from resolver if provided
-  const translations = getTranslation ? getTranslation(basePath || '') : undefined
+  // Get field metadata from resolver if provided
+  const sectionMeta = getFieldMeta?.(basePath || '')
 
-  // Use overrides if provided, otherwise fall back to translations, then field values
-  const displayLabel = labelOverride ?? translations?.label ?? field?.label
-  const displayDescription = descriptionOverride ?? translations?.description ?? field?.description
+  // Use overrides if provided, otherwise fall back to resolved metadata, then field values
+  const displayLabel = labelOverride ?? sectionMeta?.label ?? field?.label
+  const displayDescription = descriptionOverride ?? sectionMeta?.description ?? field?.description
 
   // Guard against undefined field
   if (!field) return null
@@ -603,7 +663,17 @@ export function FormSection<T = unknown>({
   // Check if this is a discriminated union (has children with conditions)
   const hasConditionalChildren = Object.values(field.children).some((child) => child.condition)
   if (hasConditionalChildren) {
-    return <DiscriminatedUnionSection field={field} form={form} minimal={minimal} />
+    return (
+      <DiscriminatedUnionSection
+        field={field}
+        form={form}
+        minimal={minimal}
+        basePath={basePath}
+        label={displayLabel}
+        description={displayDescription}
+        getFieldMeta={getFieldMeta}
+      />
+    )
   }
 
   const sectionValue = getNestedValue(form.data, basePath) || (field.type === 'array' ? [] : {})
@@ -650,6 +720,12 @@ export function FormSection<T = unknown>({
         const fieldName = key.split('.').pop() || key
         const childValue = getNestedValue(parentValue, fieldName)
 
+        // Translation path: always use "basePath.fieldName" (e.g., "fees.type")
+        // Field metadata path: "basePath.fieldName" (e.g., "fees.type")
+        // Array items share the same metadata (no index tracking needed)
+        const childMetaPath = `${basePath}.${key}`
+        const childMeta = getFieldMeta?.(childMetaPath)
+
         if (childField.type === 'object' || childField.type === 'array') {
           return (
             <FormSection
@@ -660,7 +736,9 @@ export function FormSection<T = unknown>({
               level={level + 1}
               initialCollapsed={itemIndex !== undefined}
               minimal={minimal}
-              getTranslation={getTranslation}
+              label={childMeta?.label}
+              description={childMeta?.description}
+              getFieldMeta={getFieldMeta}
             />
           )
         }
@@ -673,7 +751,9 @@ export function FormSection<T = unknown>({
             onChange={(value) => form.updateField(fullPath, value)}
             error={form.validationErrors[fullPath]}
             minimal={minimal}
-            getTranslation={getTranslation}
+            label={childMeta?.label}
+            description={childMeta?.description}
+            getFieldMeta={getFieldMeta}
           />
         )
       })
@@ -841,6 +921,7 @@ export function FormBuilder<T = any>({
                   field={field}
                   form={form}
                   minimal={false}
+                  basePath={key}
                 />
               )
             }
