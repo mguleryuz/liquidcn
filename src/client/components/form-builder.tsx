@@ -33,6 +33,14 @@ export interface FieldMeta {
 export type FieldMetaResolver = (fieldPath: string) => FieldMeta | undefined
 
 /**
+ * Form builder variants for different display densities
+ * - default: Standard spacing and all features visible
+ * - compact: Reduced spacing, sections collapsed by default, smaller text
+ * - wizard: Step-by-step mode showing one section at a time with navigation
+ */
+export type FormBuilderVariant = 'default' | 'compact' | 'wizard'
+
+/**
  * Extended FormFieldProps with optional overrides
  */
 export interface FormFieldProps extends BaseFormFieldProps {
@@ -226,9 +234,9 @@ export function FormField({
           <span className="break-words">{displayLabel || formatLabel(field.key)}</span>
           {field.required ? (
             <span className="text-destructive">*</span>
-          ) : (
+          ) : field.type !== 'boolean' ? (
             <span className="text-muted-foreground ml-1 text-[10px]">(optional)</span>
-          )}
+          ) : null}
         </Label>
         {displayDescription && (
           <Button
@@ -640,6 +648,14 @@ export interface FormSectionProps<T = unknown> extends NestedFormProps<T> {
    * to get label and description for nested fields.
    */
   getFieldMeta?: FieldMetaResolver
+  /**
+   * Display variant for the section
+   */
+  variant?: FormBuilderVariant
+  /**
+   * If true, renders content without Card wrapper (flat mode)
+   */
+  flat?: boolean
 }
 
 /**
@@ -655,8 +671,16 @@ export function FormSection<T = unknown>({
   label: labelOverride,
   description: descriptionOverride,
   getFieldMeta,
+  variant = 'default',
+  flat = false,
 }: FormSectionProps<T>) {
-  const [isCollapsed, setIsCollapsed] = useState(level > 2 ? true : initialCollapsed)
+  // Compact variant collapses sections at level > 0
+  const defaultCollapsed = variant === 'compact' ? level > 0 : level > 2
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed || initialCollapsed)
+
+  // Spacing classes based on variant
+  const contentSpacing = variant === 'compact' ? 'space-y-2' : 'space-y-3'
+  const cardPadding = variant === 'compact' ? 'p-2 sm:p-3' : 'p-3 sm:p-4'
 
   // Get field metadata from resolver if provided
   const sectionMeta = getFieldMeta?.(basePath || '')
@@ -762,6 +786,7 @@ export function FormSection<T = unknown>({
               label={childMeta?.label}
               description={childMeta?.description}
               getFieldMeta={getFieldMeta}
+              variant={variant}
             />
           )
         }
@@ -943,20 +968,71 @@ export function FormSection<T = unknown>({
     </div>
   )
 
+  // Flat mode: no Card wrapper, just content with header
+  if (flat) {
+    return (
+      <div className={cn(contentSpacing)}>
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold sm:text-base">
+            {displayLabel || formatLabel(field.key)}
+            {isArray && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {(sectionValue as any[]).length} items
+              </Badge>
+            )}
+          </h3>
+          {displayDescription && (
+            <p className="text-muted-foreground text-xs sm:text-sm">{displayDescription}</p>
+          )}
+        </div>
+        {isArray && (
+          <Button variant="outline" size="sm" onClick={addItem} className="shrink-0">
+            <Plus className="h-3 w-3 mr-1" />
+            Add
+          </Button>
+        )}
+        {content}
+      </div>
+    )
+  }
+
   return (
     <Card className={cn('border-l-4', 'border-l-primary')}>
       <CardHeader
-        className="cursor-pointer pb-0 gap-0"
+        className={cn('cursor-pointer pb-0 gap-0', variant === 'compact' && 'p-2 sm:p-3')}
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         {headerContent}
       </CardHeader>
 
       {!isCollapsed && (
-        <CardContent className="space-y-3 p-3 sm:space-y-4 sm:p-6 pt-0">{content}</CardContent>
+        <CardContent className={cn(contentSpacing, cardPadding, 'pt-0')}>{content}</CardContent>
       )}
     </Card>
   )
+}
+
+/**
+ * Extended form builder props with variant support
+ */
+export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
+  /**
+   * Display variant for the form
+   * - default: Standard spacing and all features visible
+   * - compact: Reduced spacing, sections collapsed by default, smaller text
+   * - wizard: Step-by-step mode showing one section at a time
+   */
+  variant?: FormBuilderVariant
+  /**
+   * Whether all sections should be collapsed by default
+   * Overrides variant defaults when specified
+   */
+  sectionsCollapsed?: boolean
+  /**
+   * Field keys to pin at the top level (shown above wizard steps or at the top of the form)
+   * Useful for fields like "isActive" that should be visible on all steps
+   */
+  pinnedFields?: string[]
 }
 
 /**
@@ -968,8 +1044,21 @@ export function FormBuilder<T = any>({
   title,
   collapsible = false,
   initialCollapsed = false,
-}: FormBuilderProps<T>) {
+  variant = 'default',
+  sectionsCollapsed,
+  pinnedFields = [],
+}: ExtendedFormBuilderProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
+  const [currentStep, setCurrentStep] = useState(0)
+
+  // Determine if sections should be collapsed based on variant or explicit prop
+  const defaultSectionsCollapsed = sectionsCollapsed ?? variant === 'compact'
+
+  // Spacing classes based on variant
+  const spacingClass =
+    variant === 'compact' || variant === 'wizard'
+      ? 'space-y-2 sm:space-y-3'
+      : 'space-y-4 sm:space-y-6'
 
   const calculateFieldComplexity = (field: FormFieldDefinition) => {
     if (field.type === 'object' || field.type === 'array') {
@@ -978,74 +1067,163 @@ export function FormBuilder<T = any>({
     return 0
   }
 
-  const rootFields = Object.entries(form.fields)
+  const allRootFields = Object.entries(form.fields)
     .filter(([, field]) => field && field.key && !field.key.includes('.'))
     .sort(([, a], [, b]) => calculateFieldComplexity(a) - calculateFieldComplexity(b))
+
+  // Separate pinned fields from step fields
+  const pinnedFieldsSet = new Set(pinnedFields)
+  const pinnedFieldEntries = allRootFields.filter(([key]) => pinnedFieldsSet.has(key))
+  const rootFields = allRootFields.filter(([key]) => !pinnedFieldsSet.has(key))
 
   // Get root-level validation errors (from Schema.filter or general validation)
   const rootError = form.validationErrors['_root']
 
+  // Render a single field (used by both regular and wizard mode)
+  const renderField = (key: string, field: FormFieldDefinition, useFlat = false) => {
+    // Check if field has a condition and evaluate it
+    if (field.condition) {
+      const { field: conditionField, value: expectedValue } = field.condition
+      const conditionValue = getNestedValue(form.data, conditionField)
+      if (conditionValue !== expectedValue) {
+        return null // Don't render this field
+      }
+    }
+
+    // Check if this is a discriminated union (has children with conditions)
+    const hasConditionalChildren =
+      field.children && Object.values(field.children).some((child) => child.condition)
+    if (hasConditionalChildren) {
+      return (
+        <DiscriminatedUnionSection
+          key={field.key}
+          field={field}
+          form={form}
+          minimal={false}
+          basePath={key}
+        />
+      )
+    }
+
+    if (field.type === 'object' || field.type === 'array') {
+      return (
+        <FormSection
+          key={field.key}
+          field={field}
+          form={form}
+          basePath={key}
+          level={0}
+          initialCollapsed={variant === 'wizard' ? false : defaultSectionsCollapsed}
+          variant={variant === 'wizard' ? 'compact' : variant}
+          flat={useFlat}
+        />
+      )
+    }
+
+    const value = getNestedValue(form.data, key)
+    return (
+      <FormField
+        key={field.key}
+        field={field}
+        value={value}
+        onChange={(value) => form.updateField(key, value)}
+        error={form.validationErrors[key]}
+      />
+    )
+  }
+
+  // Wizard mode: step-by-step navigation
+  if (variant === 'wizard') {
+    const totalSteps = rootFields.length
+    const [stepKey, stepField] = rootFields[currentStep] || []
+
+    if (!stepField && rootFields.length === 0) return null
+
+    return (
+      <div className={cn('space-y-4', className)}>
+        {/* Pinned fields at top */}
+        {pinnedFieldEntries.length > 0 && (
+          <div className={cn(spacingClass, 'pb-4 mb-2 border-b')}>
+            {pinnedFieldEntries.map(([key, field]) => {
+              const value = getNestedValue(form.data, key)
+              return (
+                <FormField
+                  key={key}
+                  field={field}
+                  value={value}
+                  onChange={(v) => form.updateField(key, v)}
+                  error={form.validationErrors[key]}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Step {currentStep + 1} of {totalSteps}
+          </span>
+          <div className="flex gap-1">
+            {rootFields.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setCurrentStep(idx)}
+                className={cn(
+                  'h-2 w-2 rounded-full transition-colors',
+                  idx === currentStep ? 'bg-primary' : 'bg-muted hover:bg-muted-foreground/50'
+                )}
+                aria-label={`Go to step ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Root error */}
+        {rootError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{rootError}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Current step content - use flat mode (no accordion) */}
+        {stepField && <div className={spacingClass}>{renderField(stepKey, stepField, true)}</div>}
+
+        {/* Navigation */}
+        <div className="flex justify-between gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+            disabled={currentStep === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant={currentStep === totalSteps - 1 ? 'default' : 'outline'}
+            onClick={() => setCurrentStep((s) => Math.min(totalSteps - 1, s + 1))}
+            disabled={currentStep === totalSteps - 1}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Regular content (default/compact modes)
   const content = (
-    <div className="space-y-4 sm:space-y-6">
+    <div className={spacingClass}>
       {rootError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{rootError}</AlertDescription>
         </Alert>
       )}
-      {
-        rootFields
-          .map(([key, field]) => {
-            // Check if field has a condition and evaluate it
-            if (field.condition) {
-              const { field: conditionField, value: expectedValue } = field.condition
-              const conditionValue = getNestedValue(form.data, conditionField)
-              if (conditionValue !== expectedValue) {
-                return null // Don't render this field
-              }
-            }
-
-            // Check if this is a discriminated union (has children with conditions)
-            const hasConditionalChildren =
-              field.children && Object.values(field.children).some((child) => child.condition)
-            if (hasConditionalChildren) {
-              return (
-                <DiscriminatedUnionSection
-                  key={field.key}
-                  field={field}
-                  form={form}
-                  minimal={false}
-                  basePath={key}
-                />
-              )
-            }
-
-            if (field.type === 'object' || field.type === 'array') {
-              return (
-                <FormSection
-                  key={field.key}
-                  field={field}
-                  form={form}
-                  basePath={key}
-                  level={0}
-                  initialCollapsed={initialCollapsed}
-                />
-              )
-            }
-
-            const value = getNestedValue(form.data, key)
-            return (
-              <FormField
-                key={field.key}
-                field={field}
-                value={value}
-                onChange={(value) => form.updateField(key, value)}
-                error={form.validationErrors[key]}
-              />
-            )
-          })
-          .filter(Boolean) /* Remove null entries from conditional rendering */
-      }
+      {rootFields.map(([key, field]) => renderField(key, field)).filter(Boolean)}
     </div>
   )
 
