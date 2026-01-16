@@ -1033,6 +1033,11 @@ export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
    * Useful for fields like "isActive" that should be visible on all steps
    */
   pinnedFields?: string[]
+  /**
+   * Field keys to hide from the form entirely
+   * Useful for fields that are set programmatically and shouldn't be user-editable
+   */
+  hiddenFields?: string[]
 }
 
 /**
@@ -1047,6 +1052,7 @@ export function FormBuilder<T = any>({
   variant = 'default',
   sectionsCollapsed,
   pinnedFields = [],
+  hiddenFields = [],
 }: ExtendedFormBuilderProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
   const [currentStep, setCurrentStep] = useState(0)
@@ -1060,6 +1066,9 @@ export function FormBuilder<T = any>({
       ? 'space-y-2 sm:space-y-3'
       : 'space-y-4 sm:space-y-6'
 
+  // Set of hidden field keys
+  const hiddenFieldsSet = new Set(hiddenFields)
+
   const calculateFieldComplexity = (field: FormFieldDefinition) => {
     if (field.type === 'object' || field.type === 'array') {
       return 1
@@ -1068,7 +1077,9 @@ export function FormBuilder<T = any>({
   }
 
   const allRootFields = Object.entries(form.fields)
-    .filter(([, field]) => field && field.key && !field.key.includes('.'))
+    .filter(
+      ([key, field]) => field && field.key && !field.key.includes('.') && !hiddenFieldsSet.has(key)
+    )
     .sort(([, a], [, b]) => calculateFieldComplexity(a) - calculateFieldComplexity(b))
 
   // Separate pinned fields from step fields
