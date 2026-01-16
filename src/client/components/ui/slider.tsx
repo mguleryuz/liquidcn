@@ -34,7 +34,9 @@ function Slider({
       <SliderPrimitive.Track
         data-slot="slider-track"
         className={cn(
-          'glass glass-sm relative grow rounded-full bg-white/20 border border-white/30 data-[orientation=horizontal]:h-2 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2'
+          'glass glass-sm relative grow rounded-full data-[orientation=horizontal]:h-2 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2',
+          'bg-foreground/10 border border-foreground/20',
+          'dark:bg-foreground/20 dark:border-foreground/30'
         )}
       >
         <span className="glass-layers glass-refraction glass-tint-none" aria-hidden="true" />
@@ -49,7 +51,11 @@ function Slider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="glass glass-sm relative block size-5 shrink-0 rounded-full border border-white/50 bg-white/80 shadow-lg transition-[color,box-shadow] ring-primary/30 hover:ring-4 hover:bg-white focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          className={cn(
+            'glass glass-sm relative block size-5 shrink-0 rounded-full shadow-lg transition-[color,box-shadow] ring-primary/30 hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
+            'border border-foreground/30 bg-background hover:bg-background',
+            'dark:border-foreground/50 dark:bg-foreground/80 dark:hover:bg-white'
+          )}
         />
       ))}
     </SliderPrimitive.Root>

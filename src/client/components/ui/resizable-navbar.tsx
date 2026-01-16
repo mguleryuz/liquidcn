@@ -149,7 +149,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 liquid-glass rounded-full border border-white/20"
+            className="absolute inset-0 liquid-glass rounded-full border border-foreground/15 dark:border-foreground/20"
           >
             <span className="liquid-glass-content" aria-hidden="true" />
           </motion.div>
@@ -179,7 +179,8 @@ export const NavItems = ({
       role="menubar"
       onMouseLeave={() => setHovered(null)}
       className={cn(
-        'absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium transition duration-200 lg:flex lg:space-x-2 text-white/90 hover:text-white',
+        'absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium transition duration-200 lg:flex lg:space-x-2',
+        'text-foreground/80 hover:text-foreground dark:text-foreground/90 dark:hover:text-foreground',
         className
       )}
     >
@@ -193,14 +194,14 @@ export const NavItems = ({
             onFocus={() => setHovered(idx)}
             onBlur={() => setHovered((prev) => (prev === idx ? null : prev))}
             onClick={onItemClick}
-            className="group relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-transparent text-white/90 hover:text-white"
+            className="group relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-transparent text-foreground/80 hover:text-foreground dark:text-foreground/90 dark:hover:text-foreground dark:focus-visible:ring-foreground/50"
           >
             <span className="relative z-20">{item.name}</span>
             <AnimatePresence>
               {(hovered === idx || isActive) && (
                 <motion.span
                   layoutId="nav-underline"
-                  className="pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-white/70"
+                  className="pointer-events-none absolute inset-x-3 bottom-1 h-[2px] origin-center rounded-full bg-foreground/60 dark:bg-foreground/70"
                   initial={{ opacity: 0, scaleX: 0 }}
                   animate={{
                     opacity: hovered === idx || isActive ? 1 : 0.2,
@@ -258,7 +259,7 @@ export const MobileNavHeader = ({ children, className, visible }: MobileNavHeade
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 liquid-glass rounded-[28px] border border-white/20"
+            className="absolute inset-0 liquid-glass rounded-[28px] border border-foreground/15 dark:border-foreground/20"
           >
             <span className="liquid-glass-content" aria-hidden="true" />
           </motion.div>
@@ -285,7 +286,7 @@ export const MobileNavMenu = ({ children, className, isOpen }: MobileNavMenuProp
             opacity: { duration: 0.35 },
           }}
           className={cn(
-            'relative z-[60] w-full liquid-glass rounded-[28px] border border-white/20',
+            'relative z-[60] w-full liquid-glass rounded-[28px] border border-foreground/15 dark:border-foreground/20',
             className
           )}
         >
@@ -299,10 +300,10 @@ export const MobileNavMenu = ({ children, className, isOpen }: MobileNavMenuProp
 }
 
 export const MobileNavToggle = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
-  const iconClass = 'text-white drop-shadow'
+  const iconClass = 'text-foreground drop-shadow dark:text-foreground'
 
   const toggleBaseClasses = cn(
-    'flex h-10 w-10 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2'
+    'flex h-10 w-10 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 dark:focus-visible:ring-foreground/50'
   )
 
   return isOpen ? (
@@ -363,7 +364,7 @@ export const NavbarLogo = ({
     <Link
       href={href}
       className={cn(
-        'relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-white drop-shadow',
+        'relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-foreground drop-shadow',
         className
       )}
     >
@@ -374,7 +375,7 @@ export const NavbarLogo = ({
         height={imageHeight}
         className={imageClassName}
       />
-      <span className="font-medium text-white drop-shadow">{label}</span>
+      <span className="font-medium text-foreground drop-shadow">{label}</span>
     </Link>
   )
 }

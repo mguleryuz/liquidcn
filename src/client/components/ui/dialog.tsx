@@ -52,20 +52,21 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'glass glass-lg relative data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 w-full max-w-[calc(100%-2rem)] max-h-[80vh] translate-x-[-50%] translate-y-[-50%] rounded-xl border border-white/30 shadow-2xl duration-200 sm:max-w-lg',
+          'glass glass-lg relative data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 w-full max-w-[calc(100%-2rem)] max-h-[80vh] translate-x-[-50%] translate-y-[-50%] rounded-xl shadow-2xl duration-200 sm:max-w-lg',
+          'border border-foreground/15 dark:border-white/30',
           className
         )}
         {...props}
       >
         <span
-          className="glass-layers glass-refraction glass-texture glass-tint-none"
+          className="glass-layers glass-refraction glass-texture glass-tint-dialog"
           aria-hidden="true"
         />
         <div className="relative z-10 grid gap-4 p-6 max-h-[80vh] overflow-y-auto">{children}</div>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 z-20 rounded-full p-1.5 text-white/70 transition-all hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white/50 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="absolute top-4 right-4 z-20 rounded-full p-1.5 transition-all focus:outline-hidden disabled:pointer-events-none text-foreground/60 hover:text-foreground hover:bg-foreground/10 focus:ring-2 focus:ring-foreground/30 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10 dark:focus:ring-white/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
             <span className="sr-only">Close</span>
@@ -100,7 +101,10 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-lg leading-none font-semibold text-white', className)}
+      className={cn(
+        'text-lg leading-none font-semibold text-foreground dark:text-white',
+        className
+      )}
       {...props}
     />
   )
@@ -113,7 +117,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn('text-white/70 text-sm', className)}
+      className={cn('text-muted-foreground dark:text-white/70 text-sm', className)}
       {...props}
     />
   )

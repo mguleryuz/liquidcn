@@ -5,20 +5,20 @@ import * as React from 'react'
 import { cn } from '../../utils'
 
 const buttonVariants = cva(
-  'cursor-pointer rounded-lg border text-sm font-semibold transition-all duration-300 align-middle select-none font-sans text-white disabled:pointer-events-none disabled:opacity-50 bg-white/10 border-white/40 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 aria-invalid:border-destructive/60 aria-invalid:focus-visible:ring-destructive/40',
+  'cursor-pointer rounded-lg border text-sm font-semibold transition-all duration-300 align-middle select-none font-sans disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 aria-invalid:border-destructive/60 aria-invalid:focus-visible:ring-destructive/40',
   {
     variants: {
       variant: {
         default:
-          'text-primary-foreground bg-primary/20 border-primary/40 hover:bg-primary/30 focus-visible:ring-primary/50',
+          'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20 focus-visible:ring-primary/50 dark:text-primary-foreground dark:bg-primary/20 dark:border-primary/40 dark:hover:bg-primary/30',
         destructive:
-          'text-destructive-foreground bg-destructive/25 border-destructive/50 hover:bg-destructive/35 focus-visible:ring-destructive/50',
+          'text-destructive bg-destructive/10 border-destructive/30 hover:bg-destructive/20 focus-visible:ring-destructive/50 dark:text-destructive-foreground dark:bg-destructive/25 dark:border-destructive/50 dark:hover:bg-destructive/35',
         outline:
-          'text-white bg-white/10 border-white/50 hover:bg-white/20 focus-visible:ring-white/60',
+          'text-foreground bg-foreground/5 border-foreground/30 hover:bg-foreground/10 focus-visible:ring-foreground/40 dark:bg-foreground/10 dark:border-foreground/40 dark:hover:bg-foreground/20',
         secondary:
-          'text-secondary-foreground bg-secondary/20 border-secondary/50 hover:bg-secondary/30 focus-visible:ring-secondary/50',
+          'text-secondary-foreground bg-secondary/15 border-secondary/30 hover:bg-secondary/25 focus-visible:ring-secondary/50 dark:bg-secondary/20 dark:border-secondary/50 dark:hover:bg-secondary/30',
         ghost:
-          'text-white bg-transparent border-transparent shadow-none hover:bg-white/10 focus-visible:ring-white/60',
+          'text-foreground bg-transparent border-transparent shadow-none hover:bg-foreground/5 focus-visible:ring-foreground/40 dark:hover:bg-foreground/10',
         link: 'text-primary bg-transparent border-transparent shadow-none underline-offset-4 hover:underline hover:bg-transparent focus-visible:ring-0',
       },
       size: {
