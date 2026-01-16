@@ -184,7 +184,7 @@
   overflow: hidden;
   backdrop-filter: blur(200px) saturate(2) contrast(1.1);
   -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1);
-  background-color: oklch(0.9653 0.0069 247.8959 / 0.82);
+  background-color: oklch(from var(--card) l c h / 0.82);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.18),
     0 0 0 1px rgba(255, 255, 255, 0.4),
@@ -195,7 +195,7 @@
 }
 
 .dark .liquid-glass {
-  background-color: oklch(0.2765 0.1258 263.68 / 0.82);
+  background-color: oklch(from var(--card) l c h / 0.82);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.15),
@@ -256,32 +256,32 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    oklch(0.9653 0.0069 247.8959 / 0.3) 10%,
-    oklch(0.9653 0.0069 247.8959 / 0.6) 30%,
+    oklch(from var(--border) l c h / 0.3) 10%,
+    oklch(from var(--border) l c h / 0.6) 30%,
     oklch(1 0 0 / 0.8) 50%,
-    oklch(0.9653 0.0069 247.8959 / 0.6) 70%,
-    oklch(0.9653 0.0069 247.8959 / 0.3) 90%,
+    oklch(from var(--border) l c h / 0.6) 70%,
+    oklch(from var(--border) l c h / 0.3) 90%,
     transparent 100%
   );
   box-shadow:
-    0 0 20px 2px oklch(0.9653 0.0069 247.8959 / 0.15),
-    0 0 40px 4px oklch(0.9653 0.0069 247.8959 / 0.1);
+    0 0 20px 2px oklch(from var(--border) l c h / 0.15),
+    0 0 40px 4px oklch(from var(--border) l c h / 0.1);
 }
 
 .dark .liquid-glass-border {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    oklch(0.5 0.15 260 / 0.3) 10%,
-    oklch(0.6 0.18 260 / 0.5) 30%,
-    oklch(0.7 0.2 260 / 0.7) 50%,
-    oklch(0.6 0.18 260 / 0.5) 70%,
-    oklch(0.5 0.15 260 / 0.3) 90%,
+    oklch(from var(--border) l c h / 0.3) 10%,
+    oklch(from var(--border) l c h / 0.5) 30%,
+    oklch(from var(--border) l c h / 0.7) 50%,
+    oklch(from var(--border) l c h / 0.5) 70%,
+    oklch(from var(--border) l c h / 0.3) 90%,
     transparent 100%
   );
   box-shadow:
-    0 0 20px 2px oklch(0.6 0.18 260 / 0.2),
-    0 0 40px 4px oklch(0.6 0.18 260 / 0.1);
+    0 0 20px 2px oklch(from var(--border) l c h / 0.2),
+    0 0 40px 4px oklch(from var(--border) l c h / 0.1);
 }
 
 /* ============================================================================
@@ -292,7 +292,7 @@
 [data-rk] [role='dialog'] > div {
   backdrop-filter: blur(200px) saturate(2) contrast(1.1);
   -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1);
-  background-color: oklch(0.9653 0.0069 247.8959 / 0.82);
+  background-color: oklch(from var(--card) l c h / 0.82);
   border-radius: 1rem;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.18),
@@ -302,7 +302,7 @@
 }
 
 .dark [data-rk] [role='dialog'] > div {
-  background-color: oklch(0.2765 0.1258 263.68 / 0.82);
+  background-color: oklch(from var(--card) l c h / 0.82);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.15),
@@ -321,7 +321,7 @@
   border: none !important;
   backdrop-filter: blur(200px) saturate(2) contrast(1.1) !important;
   -webkit-backdrop-filter: blur(200px) saturate(2) contrast(1.1) !important;
-  background-color: oklch(0.9653 0.0069 247.8959 / 0.85) !important;
+  background-color: oklch(from var(--card) l c h / 0.85) !important;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.18),
     0 0 0 1px rgba(255, 255, 255, 0.4),
@@ -332,7 +332,7 @@
 }
 
 .dark [data-sonner-toaster] [data-sonner-toast].liquid-glass {
-  background-color: oklch(0.2765 0.1258 263.68 / 0.85) !important;
+  background-color: oklch(from var(--card) l c h / 0.85) !important;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.15),
@@ -384,21 +384,21 @@
 [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-title] {
   position: relative !important;
   z-index: 2 !important;
-  color: oklch(0.2093 0.0381 251.4803) !important;
+  color: var(--foreground) !important;
 }
 
 [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-description] {
   position: relative !important;
   z-index: 2 !important;
-  color: oklch(0.5544 0.0407 257.4166) !important;
+  color: var(--muted-foreground) !important;
 }
 
 .dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-title] {
-  color: oklch(0.9288 0.0126 255.5078) !important;
+  color: var(--foreground) !important;
 }
 
 .dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-description] {
-  color: oklch(0.8107 0.0351 256.7878) !important;
+  color: var(--muted-foreground) !important;
 }
 
 /* Toast icon container - ensure above refraction */
@@ -418,12 +418,12 @@
   position: relative !important;
   z-index: 2 !important;
   backdrop-filter: blur(20px) !important;
-  background-color: oklch(0.9653 0.0069 247.8959 / 0.5) !important;
+  background-color: oklch(from var(--secondary) l c h / 0.5) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .dark [data-sonner-toaster] [data-sonner-toast].liquid-glass [data-button] {
-  background-color: oklch(0.2765 0.1258 263.68 / 0.5) !important;
+  background-color: oklch(from var(--secondary) l c h / 0.5) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
