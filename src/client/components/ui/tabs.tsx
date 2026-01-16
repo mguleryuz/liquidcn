@@ -70,7 +70,7 @@ function Tabs({
       data-slot="tabs"
       data-responsive={responsive ? '' : undefined}
       className={cn(
-        'flex flex-col gap-2',
+        'flex flex-col gap-4',
         responsive &&
           '[&_[data-slot=tabs-list-wrapper]]:h-max [&_[data-slot=tabs-list-wrapper]]:w-full',
         responsive && '[&_[role="tab"]]:flex-1',
