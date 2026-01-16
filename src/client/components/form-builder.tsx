@@ -108,6 +108,13 @@ export function FormField({
   const shouldRenderAsSelect =
     field.type === 'literal' || (field.type === 'string' && customOptions)
   const selectOptions = customOptions || field.literalOptions || []
+  const optionDescriptions = field?.literalOptionsDescriptions || {}
+
+  // Helper to get display label for an option
+  const getOptionLabel = (option: any): string => {
+    const optionKey = option?.toString() ?? ''
+    return optionDescriptions[optionKey] || optionKey
+  }
 
   const renderField = () => {
     // Handle custom options for string fields - render as select
@@ -131,7 +138,9 @@ export function FormField({
             }}
           >
             <SelectTrigger className={cn('flex-1', error && 'border-red-500')}>
-              <SelectValue placeholder="Select an option..." />
+              <SelectValue placeholder="Select an option...">
+                {value ? getOptionLabel(value) : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent position="item-aligned" className="h-max w-max">
               {!field.required && (
@@ -141,7 +150,7 @@ export function FormField({
               )}
               {selectOptions.map((option) => (
                 <SelectItem key={option?.toString()} value={option?.toString()}>
-                  {option?.toString() ?? ''}
+                  {getOptionLabel(option)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -679,9 +688,23 @@ export function FormSection<T = unknown>({
   const sectionValue = getNestedValue(form.data, basePath) || (field.type === 'array' ? [] : {})
   const isArray = field.type === 'array'
 
+  // Check if this is a primitive array (no children, or has literalOptions)
+  const isPrimitiveArray = isArray && (!field.children || Object.keys(field.children).length === 0)
+  const isLiteralArray = isArray && field.literalOptions && field.literalOptions.length > 0
+
   const addItem = () => {
     const newArray = [...(sectionValue as any[])]
-    newArray.push(createDefaultItem(field.children!))
+
+    // For primitive/literal arrays, add a default primitive value
+    if (isPrimitiveArray || isLiteralArray) {
+      // Use first literal option if available, otherwise empty string
+      const defaultValue = field.literalOptions?.[0] ?? ''
+      newArray.push(defaultValue)
+    } else {
+      // For object arrays, create a default item from children
+      newArray.push(createDefaultItem(field.children!))
+    }
+
     form.updateField(basePath, newArray)
     // Expand the section when adding an item
     setIsCollapsed(false)
@@ -814,8 +837,79 @@ export function FormSection<T = unknown>({
     </>
   )
 
+  // Render content for primitive/literal arrays
+  const renderPrimitiveArrayContent = () => {
+    const optionDescriptions = field.literalOptionsDescriptions || {}
+
+    // Helper to get display label for an option
+    const getOptionLabel = (option: any): string => {
+      const optionKey = option?.toString() ?? ''
+      return optionDescriptions[optionKey] || optionKey
+    }
+
+    if ((sectionValue as any[]).length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-4">
+          No items yet. Click &quot;Add&quot; to create the first item.
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-2">
+        {(sectionValue as any[]).map((item: any, index: number) => (
+          <div key={`${basePath}[${index}]`} className="flex items-center gap-2">
+            {isLiteralArray ? (
+              <Select
+                value={item?.toString() || ''}
+                onValueChange={(value) => {
+                  const newArray = [...(sectionValue as any[])]
+                  newArray[index] = value
+                  form.updateField(basePath, newArray)
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select...">
+                    {item ? getOptionLabel(item) : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {field.literalOptions?.map((option: any) => (
+                    <SelectItem key={option?.toString()} value={option?.toString()}>
+                      {getOptionLabel(option)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={item?.toString() || ''}
+                onChange={(e) => {
+                  const newArray = [...(sectionValue as any[])]
+                  newArray[index] = e.target.value
+                  form.updateField(basePath, newArray)
+                }}
+                className="flex-1"
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeItem(index)}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const content = isArray ? (
-    (sectionValue as any[]).length === 0 ? (
+    isPrimitiveArray || isLiteralArray ? (
+      renderPrimitiveArrayContent()
+    ) : (sectionValue as any[]).length === 0 ? (
       <div className="text-center text-muted-foreground py-4">
         No items yet. Click &quot;Add&quot; to create the first item.
       </div>
