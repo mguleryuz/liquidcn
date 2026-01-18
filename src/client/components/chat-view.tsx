@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/button'
 import { Textarea } from '../../components/ui/textarea'
 import { cn } from '../../utils'
 import { useSpeechToText } from '../hooks/use-speech-to-text'
+import { convertToWav, getExtensionForMimeType, getSupportedMimeType } from '../utils/audio-utils'
 import { AudioVisualizer } from './audio-visualizer'
 
 /**
@@ -238,7 +239,12 @@ export function ChatView({
   const startRecording = React.useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+
+      // Detect supported audio format (Safari doesn't support webm)
+      const mimeType = getSupportedMimeType()
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
 
       audioChunksRef.current = []
 
@@ -254,8 +260,21 @@ export function ChatView({
 
         // Create audio file from chunks
         if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-          const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
+          const actualMimeType = recorder.mimeType || mimeType || 'audio/webm'
+          const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
+
+          // Convert to WAV for maximum compatibility with OpenAI transcription
+          // This ensures iOS/Safari recordings work correctly
+          let audioFile: File
+          try {
+            const wavBlob = await convertToWav(audioBlob)
+            audioFile = new File([wavBlob], 'recording.wav', { type: 'audio/wav' })
+          } catch (conversionError) {
+            // Fallback to original format if conversion fails
+            console.warn('WAV conversion failed, using original format:', conversionError)
+            const extension = getExtensionForMimeType(actualMimeType)
+            audioFile = new File([audioBlob], `recording.${extension}`, { type: actualMimeType })
+          }
 
           // Transcribe the audio
           await transcribe({ audio: audioFile })
