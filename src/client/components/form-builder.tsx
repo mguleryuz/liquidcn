@@ -4,7 +4,9 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
+  Pencil,
   Plus,
+  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -16,6 +18,8 @@ import type {
   UseSchemaFormReturn,
 } from 'tanstack-effect'
 import { formatLabel, getNestedValue } from 'tanstack-effect'
+
+import { ChatView } from './chat-view'
 
 /**
  * Field metadata returned by the resolver
@@ -231,7 +235,7 @@ export function FormField({
           htmlFor={field.key}
           className={cn('min-w-0 flex-1 text-xs sm:text-sm', field.required && 'font-semibold')}
         >
-          <span className="break-words">{displayLabel || formatLabel(field.key)}</span>
+          <span className="wrap-break-word">{displayLabel || formatLabel(field.key)}</span>
           {field.required ? (
             <span className="text-destructive">*</span>
           ) : field.type !== 'boolean' ? (
@@ -941,7 +945,7 @@ export function FormSection<T = unknown>({
     ) : (
       <div className="space-y-4">
         {(sectionValue as any[]).map((item: any, index: number) => (
-          <Card key={`${basePath}[${index}]`} className="border border-dashed !shadow-none">
+          <Card key={`${basePath}[${index}]`} className="border border-dashed shadow-none!">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Item {index + 1}</CardTitle>
@@ -1013,6 +1017,11 @@ export function FormSection<T = unknown>({
 }
 
 /**
+ * Form builder mode for AI or Edit
+ */
+export type FormBuilderMode = 'ai' | 'edit'
+
+/**
  * Extended form builder props with variant support
  */
 export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
@@ -1038,6 +1047,25 @@ export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
    * Useful for fields that are set programmatically and shouldn't be user-editable
    */
   hiddenFields?: string[]
+  /**
+   * Enable AI mode toggle. When true, shows AI/Edit mode switcher.
+   * Requires form.ai to be configured in useSchemaForm.
+   */
+  enableAIMode?: boolean
+  /**
+   * Initial mode when AI is enabled
+   * @default 'ai'
+   */
+  initialMode?: FormBuilderMode
+  /**
+   * Placeholder for AI chat input
+   */
+  aiPlaceholder?: string
+  /**
+   * Minimum height for the chat view in AI mode
+   * @default '300px'
+   */
+  aiChatMinHeight?: string
 }
 
 /**
@@ -1053,9 +1081,18 @@ export function FormBuilder<T = any>({
   sectionsCollapsed,
   pinnedFields = [],
   hiddenFields = [],
+  enableAIMode = false,
+  initialMode = 'ai',
+  aiPlaceholder,
+  aiChatMinHeight = '300px',
 }: ExtendedFormBuilderProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
   const [currentStep, setCurrentStep] = useState(0)
+  const defaultMode = enableAIMode && form.ai ? initialMode : 'edit'
+  const [mode, setMode] = useState<FormBuilderMode>(defaultMode)
+
+  // Determine if AI mode is actually available
+  const hasAI = enableAIMode && form.ai
 
   // Determine if sections should be collapsed based on variant or explicit prop
   const defaultSectionsCollapsed = sectionsCollapsed ?? variant === 'compact'
@@ -1226,7 +1263,7 @@ export function FormBuilder<T = any>({
   }
 
   // Regular content (default/compact modes)
-  const content = (
+  const editContent = (
     <div className={spacingClass}>
       {rootError && (
         <Alert variant="destructive">
@@ -1237,6 +1274,47 @@ export function FormBuilder<T = any>({
       {rootFields.map(([key, field]) => renderField(key, field)).filter(Boolean)}
     </div>
   )
+
+  // AI mode content
+  const aiContent = hasAI ? (
+    <ChatView
+      messages={form.ai!.messages}
+      clarifications={form.ai!.clarifications}
+      status={form.ai!.status}
+      summary={form.ai!.summary}
+      onSend={form.ai!.fill}
+      onAnswer={form.ai!.answer}
+      placeholder={aiPlaceholder}
+      className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
+    />
+  ) : null
+
+  // Mode toggle buttons
+  const modeToggle = hasAI ? (
+    <div className="flex gap-1 p-1 rounded-lg bg-muted mb-4">
+      <Button
+        variant={mode === 'ai' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => setMode('ai')}
+        className="flex-1 gap-2"
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        AI
+      </Button>
+      <Button
+        variant={mode === 'edit' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => setMode('edit')}
+        className="flex-1 gap-2"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Edit
+      </Button>
+    </div>
+  ) : null
+
+  // Select content based on mode
+  const content = mode === 'ai' && hasAI ? aiContent : editContent
 
   if (collapsible && title) {
     return (
@@ -1254,7 +1332,12 @@ export function FormBuilder<T = any>({
             <CardTitle className="min-w-0 flex-1 truncate text-base sm:text-lg">{title}</CardTitle>
           </div>
         </CardHeader>
-        {!isCollapsed && <CardContent className="p-3 sm:p-6 pt-0">{content}</CardContent>}
+        {!isCollapsed && (
+          <CardContent className="p-3 sm:p-6 pt-0">
+            {modeToggle}
+            {content}
+          </CardContent>
+        )}
       </Card>
     )
   }
@@ -1262,6 +1345,7 @@ export function FormBuilder<T = any>({
   return (
     <div className={className}>
       {title && <h3 className="mb-3 text-base font-semibold sm:mb-4 sm:text-lg">{title}</h3>}
+      {modeToggle}
       {content}
     </div>
   )
