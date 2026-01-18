@@ -2,7 +2,7 @@
 
 import { Loader2, Send, Sparkles } from 'lucide-react'
 import * as React from 'react'
-import type { AIFormMessage, ClarificationQuestion } from 'tanstack-effect'
+import type { AIFormMessage } from 'tanstack-effect'
 
 import { Button } from '../../components/ui/button'
 import { Textarea } from '../../components/ui/textarea'
@@ -17,25 +17,13 @@ export interface ChatViewProps {
    */
   messages: AIFormMessage[]
   /**
-   * @description Clarification questions from AI
-   */
-  clarifications: ClarificationQuestion[]
-  /**
    * @description Current status of AI
    */
   status: 'idle' | 'filling' | 'clarifying' | 'complete' | 'error'
   /**
-   * @description Summary of last AI action
-   */
-  summary: string | null
-  /**
    * @description Callback to send a message
    */
   onSend: (message: string) => void
-  /**
-   * @description Callback to answer a clarification
-   */
-  onAnswer: (field: string, value: unknown) => void
   /**
    * @description Optional className for container
    */
@@ -44,6 +32,101 @@ export interface ChatViewProps {
    * @description Placeholder text for input
    */
   placeholder?: string
+}
+
+/**
+ * @description Simple markdown renderer for chat messages
+ * Supports: **bold**, *italic*, bullet points, and line breaks
+ */
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split('\n')
+
+  return lines.map((line, lineIndex) => {
+    // Check if it's a bullet point
+    const bulletMatch = line.match(/^(\s*)(•|-)\s*(.*)$/)
+
+    let content: React.ReactNode
+
+    if (bulletMatch) {
+      const [, indent, , bulletContent] = bulletMatch
+      content = (
+        <span>
+          {indent}• {renderInlineMarkdown(bulletContent)}
+        </span>
+      )
+    } else {
+      content = renderInlineMarkdown(line)
+    }
+
+    return (
+      <React.Fragment key={lineIndex}>
+        {lineIndex > 0 && <br />}
+        {content}
+      </React.Fragment>
+    )
+  })
+}
+
+/**
+ * @description Render inline markdown (bold, italic)
+ */
+function renderInlineMarkdown(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = []
+  let remaining = text
+  let keyCounter = 0
+
+  // Process **bold** and *italic*
+  while (remaining.length > 0) {
+    // Look for **bold**
+    const boldMatch = remaining.match(/\*\*([^*]+)\*\*/)
+    // Look for *italic* (but not **)
+    const italicMatch = remaining.match(/(?<!\*)\*([^*]+)\*(?!\*)/)
+
+    let firstMatch: { match: RegExpMatchArray; type: 'bold' | 'italic' } | null = null
+
+    if (boldMatch && italicMatch) {
+      // Use whichever comes first
+      if ((boldMatch.index ?? Infinity) <= (italicMatch.index ?? Infinity)) {
+        firstMatch = { match: boldMatch, type: 'bold' }
+      } else {
+        firstMatch = { match: italicMatch, type: 'italic' }
+      }
+    } else if (boldMatch) {
+      firstMatch = { match: boldMatch, type: 'bold' }
+    } else if (italicMatch) {
+      firstMatch = { match: italicMatch, type: 'italic' }
+    }
+
+    if (firstMatch && firstMatch.match.index !== undefined) {
+      // Add text before the match
+      if (firstMatch.match.index > 0) {
+        parts.push(remaining.slice(0, firstMatch.match.index))
+      }
+
+      // Add the formatted text
+      if (firstMatch.type === 'bold') {
+        parts.push(
+          <strong key={keyCounter++} className="font-semibold">
+            {firstMatch.match[1]}
+          </strong>
+        )
+      } else {
+        parts.push(
+          <em key={keyCounter++} className="italic">
+            {firstMatch.match[1]}
+          </em>
+        )
+      }
+
+      remaining = remaining.slice(firstMatch.match.index + firstMatch.match[0].length)
+    } else {
+      // No more matches, add remaining text
+      parts.push(remaining)
+      break
+    }
+  }
+
+  return parts.length === 1 ? parts[0] : <>{parts}</>
 }
 
 /**
@@ -60,7 +143,7 @@ function MessageBubble({ message, isUser }: { message: AIFormMessage; isUser: bo
             : 'bg-muted text-muted-foreground rounded-bl-md'
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <div className="whitespace-pre-wrap wrap-break-word">{renderMarkdown(message.content)}</div>
         {message.timestamp && (
           <span className="mt-1 block text-[10px] opacity-60">
             {new Date(message.timestamp).toLocaleTimeString([], {
@@ -75,101 +158,12 @@ function MessageBubble({ message, isUser }: { message: AIFormMessage; isUser: bo
 }
 
 /**
- * @description Clarification question component
- */
-function ClarificationCard({
-  clarification,
-  onAnswer,
-}: {
-  clarification: ClarificationQuestion
-  onAnswer: (field: string, value: unknown) => void
-}) {
-  const [textValue, setTextValue] = React.useState('')
-
-  return (
-    <div className="flex w-full justify-start">
-      <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-muted p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="font-medium text-sm">{clarification.question}</span>
-        </div>
-
-        {clarification.type === 'choice' && clarification.options && (
-          <div className="flex flex-wrap gap-2">
-            {clarification.options.map((option) => (
-              <Button
-                key={option.value}
-                variant="outline"
-                size="sm"
-                onClick={() => onAnswer(clarification.field, option.value)}
-                className="text-xs"
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {clarification.type === 'multiselect' && clarification.options && (
-          <div className="flex flex-wrap gap-2">
-            {clarification.options.map((option) => (
-              <Button
-                key={option.value}
-                variant="outline"
-                size="sm"
-                onClick={() => onAnswer(clarification.field, option.value)}
-                className="text-xs"
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {clarification.type === 'text' && (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && textValue.trim()) {
-                  onAnswer(clarification.field, textValue.trim())
-                  setTextValue('')
-                }
-              }}
-              placeholder="Type your answer..."
-              className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-            />
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                if (textValue.trim()) {
-                  onAnswer(clarification.field, textValue.trim())
-                  setTextValue('')
-                }
-              }}
-            >
-              <Send className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/**
  * @description Full chat UI for AI form filling
  */
 export function ChatView({
   messages,
-  clarifications,
   status,
-  summary,
   onSend,
-  onAnswer,
   className,
   placeholder = 'Describe what you want to fill in...',
 }: ChatViewProps) {
@@ -180,7 +174,7 @@ export function ChatView({
   // Auto-scroll to bottom when messages change
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, clarifications])
+  }, [messages])
 
   const handleSend = () => {
     if (input.trim() && status !== 'filling') {
@@ -218,15 +212,6 @@ export function ChatView({
           <MessageBubble key={index} message={message} isUser={message.role === 'user'} />
         ))}
 
-        {/* Show clarification questions */}
-        {clarifications.map((clarification, index) => (
-          <ClarificationCard
-            key={`clarification-${index}`}
-            clarification={clarification}
-            onAnswer={onAnswer}
-          />
-        ))}
-
         {/* Loading indicator */}
         {isLoading && (
           <div className="flex w-full justify-start">
@@ -236,21 +221,12 @@ export function ChatView({
           </div>
         )}
 
-        {/* Summary badge */}
-        {summary && status === 'complete' && (
-          <div className="flex w-full justify-center">
-            <div className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs text-primary">
-              {summary}
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input area */}
       <div className="border-t p-4">
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Textarea
             ref={textareaRef}
             value={input}
@@ -258,13 +234,13 @@ export function ChatView({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={isLoading}
-            className="min-h-[44px] max-h-32 resize-none"
+            className="min-h-11 max-h-32 resize-none"
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             size="icon"
-            className="shrink-0 h-[44px] w-[44px]"
+            className="shrink-0"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

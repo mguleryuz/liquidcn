@@ -18,6 +18,7 @@ A collection of reusable, accessible React UI components built with TypeScript, 
 
 - **UI Components**: Button, Card, Alert, Badge, Input, Textarea, Footer, PrettyAmount
 - **Client Components**: Dialog, Select, Switch, Tabs, Sonner (Toast), PrettyDate, ResizableNavbar, Slider
+- **Form Components**: FormBuilder (schema-driven forms with AI mode), ChatView (AI chat interface)
 - **Hooks**: Custom React hooks including `useCookieWithFallback`
 - **Utilities**: `cn()` utility for className merging using clsx and tailwind-merge
 
@@ -154,6 +155,128 @@ export function MyFooter() {
       links={footerLinks}
       builtByBrand="Your Brand"
       linkComponent={Link}
+    />
+  )
+}
+```
+
+### FormBuilder Component
+
+The `FormBuilder` component renders schema-driven forms with optional AI-powered form filling. Works with `useSchemaForm` from `tanstack-effect`.
+
+#### Basic Usage
+
+```tsx
+import { useSchemaForm } from 'tanstack-effect/client'
+import { FormBuilder, FormValidationAlert, isFormValid } from 'liquidcn/client'
+import { Button } from 'liquidcn'
+import { Schema } from 'effect'
+
+const ProjectSchema = Schema.Struct({
+  projectName: Schema.String.pipe(Schema.annotations({ description: 'Name of the project' })),
+  projectType: Schema.Literal('web', 'mobile', 'desktop').pipe(
+    Schema.annotations({ description: 'Type of project' })
+  ),
+  teamSize: Schema.Number.pipe(Schema.annotations({ description: 'Number of team members' })),
+})
+
+function ProjectForm() {
+  const form = useSchemaForm({
+    schema: ProjectSchema,
+  })
+
+  return (
+    <div>
+      <FormBuilder form={form} variant="default" />
+      <Button onClick={() => console.log(form.data)}>Submit</Button>
+      <FormValidationAlert form={form} />
+    </div>
+  )
+}
+```
+
+#### With AI Mode
+
+Enable AI-powered form filling by adding the `ai` option to `useSchemaForm` and `enableAIMode` to `FormBuilder`:
+
+```tsx
+import { useSchemaForm } from 'tanstack-effect/client'
+import { FormBuilder, FormValidationAlert } from 'liquidcn/client'
+import { Button } from 'liquidcn'
+import { Schema } from 'effect'
+
+const ProjectSchema = Schema.Struct({
+  projectName: Schema.String.pipe(Schema.annotations({ description: 'Name of the project' })),
+  projectType: Schema.Literal('web', 'mobile', 'desktop').pipe(
+    Schema.annotations({ description: 'Type of project' })
+  ),
+  teamSize: Schema.Number.pipe(Schema.annotations({ description: 'Number of team members' })),
+})
+
+function ProjectForm() {
+  const form = useSchemaForm({
+    schema: ProjectSchema,
+    // Enable AI form filling
+    ai: {
+      endpoint: '/api/ai-form-fill',
+    },
+  })
+
+  return (
+    <div>
+      <FormBuilder
+        form={form}
+        variant="wizard"
+        enableAIMode
+        aiPlaceholder="Describe your project..."
+        aiChatMinHeight="300px"
+      />
+      <Button onClick={() => console.log(form.data)}>Submit</Button>
+      <FormValidationAlert form={form} />
+    </div>
+  )
+}
+```
+
+With AI mode enabled, the FormBuilder shows:
+
+- **AI/Edit toggle buttons** - Switch between chat and manual editing
+- **Chat interface** - Full conversation with AI including message history
+- **Clarification prompts** - AI asks for missing required fields
+- **Summary** - Shows what fields were filled (e.g. "Filled 3 fields: projectName, projectType, teamSize")
+
+#### FormBuilder Props
+
+| Prop              | Type                                 | Default     | Description                     |
+| ----------------- | ------------------------------------ | ----------- | ------------------------------- |
+| `form`            | `UseSchemaFormReturn`                | required    | Form state from `useSchemaForm` |
+| `variant`         | `'default' \| 'compact' \| 'wizard'` | `'default'` | Display variant                 |
+| `enableAIMode`    | `boolean`                            | `false`     | Show AI/Edit mode toggle        |
+| `initialMode`     | `'ai' \| 'edit'`                     | `'ai'`      | Initial mode when AI is enabled |
+| `aiPlaceholder`   | `string`                             | -           | Placeholder for AI chat input   |
+| `aiChatMinHeight` | `string`                             | `'300px'`   | Minimum height for chat view    |
+| `pinnedFields`    | `string[]`                           | `[]`        | Fields to show at top level     |
+| `hiddenFields`    | `string[]`                           | `[]`        | Fields to hide from form        |
+
+### ChatView Component
+
+The `ChatView` component provides a standalone chat UI for AI interactions:
+
+```tsx
+import { ChatView } from 'liquidcn/client'
+
+function AIChat() {
+  const [messages, setMessages] = useState([])
+
+  return (
+    <ChatView
+      messages={messages}
+      clarifications={[]}
+      status="idle"
+      summary={null}
+      onSend={(msg) => console.log('Send:', msg)}
+      onAnswer={(field, value) => console.log('Answer:', field, value)}
+      placeholder="Ask me anything..."
     />
   )
 }

@@ -85,6 +85,7 @@ import { cn } from '../../utils'
 import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Switch } from './ui/switch'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 /**
  * Individual form field component
@@ -1187,26 +1188,28 @@ export function FormBuilder<T = any>({
 
     if (!stepField && rootFields.length === 0) return null
 
-    return (
-      <div className={cn('space-y-4', className)}>
-        {/* Pinned fields at top */}
-        {pinnedFieldEntries.length > 0 && (
-          <div className={cn(spacingClass, 'pb-4 mb-2 border-b')}>
-            {pinnedFieldEntries.map(([key, field]) => {
-              const value = getNestedValue(form.data, key)
-              return (
-                <FormField
-                  key={key}
-                  field={field}
-                  value={value}
-                  onChange={(v) => form.updateField(key, v)}
-                  error={form.validationErrors[key]}
-                />
-              )
-            })}
-          </div>
-        )}
+    // Pinned fields - shown in both AI and Edit modes
+    const wizardPinnedFields =
+      pinnedFieldEntries.length > 0 ? (
+        <div className={cn(spacingClass, mode === 'edit' && 'pb-4 mb-2 border-b')}>
+          {pinnedFieldEntries.map(([key, field]) => {
+            const value = getNestedValue(form.data, key)
+            return (
+              <FormField
+                key={key}
+                field={field}
+                value={value}
+                onChange={(v) => form.updateField(key, v)}
+                error={form.validationErrors[key]}
+              />
+            )
+          })}
+        </div>
+      ) : null
 
+    // Wizard edit content (steps)
+    const wizardEditContent = (
+      <>
         {/* Step indicator */}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
@@ -1258,9 +1261,63 @@ export function FormBuilder<T = any>({
             Next
           </Button>
         </div>
+      </>
+    )
+
+    // Wizard AI content
+    const wizardAiContent = hasAI ? (
+      <ChatView
+        messages={form.ai!.messages}
+        status={form.ai!.status}
+        onSend={form.ai!.fill}
+        placeholder={aiPlaceholder}
+        className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
+      />
+    ) : null
+
+    // Wizard mode toggle
+    const wizardModeToggle = hasAI ? (
+      <Tabs responsive value={mode} onValueChange={(value) => setMode(value as FormBuilderMode)}>
+        <TabsList>
+          <TabsTrigger value="ai">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI
+          </TabsTrigger>
+          <TabsTrigger value="edit">
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+    ) : null
+
+    return (
+      <div className={cn('space-y-4', className)}>
+        {wizardModeToggle}
+        {wizardPinnedFields}
+        {mode === 'ai' && hasAI ? wizardAiContent : wizardEditContent}
       </div>
     )
   }
+
+  // Pinned fields - shown in both AI and Edit modes
+  const regularPinnedFields =
+    pinnedFieldEntries.length > 0 ? (
+      <div className={cn(spacingClass, mode === 'edit' && 'pb-4 mb-2 border-b')}>
+        {pinnedFieldEntries.map(([key, field]) => {
+          const value = getNestedValue(form.data, key)
+          return (
+            <FormField
+              key={key}
+              field={field}
+              value={value}
+              onChange={(v) => form.updateField(key, v)}
+              error={form.validationErrors[key]}
+            />
+          )
+        })}
+      </div>
+    ) : null
 
   // Regular content (default/compact modes)
   const editContent = (
@@ -1279,11 +1336,8 @@ export function FormBuilder<T = any>({
   const aiContent = hasAI ? (
     <ChatView
       messages={form.ai!.messages}
-      clarifications={form.ai!.clarifications}
       status={form.ai!.status}
-      summary={form.ai!.summary}
       onSend={form.ai!.fill}
-      onAnswer={form.ai!.answer}
       placeholder={aiPlaceholder}
       className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
     />
@@ -1291,30 +1345,22 @@ export function FormBuilder<T = any>({
 
   // Mode toggle buttons
   const modeToggle = hasAI ? (
-    <div className="flex gap-1 p-1 rounded-lg bg-muted mb-4">
-      <Button
-        variant={mode === 'ai' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => setMode('ai')}
-        className="flex-1 gap-2"
-      >
-        <Sparkles className="h-3.5 w-3.5" />
-        AI
-      </Button>
-      <Button
-        variant={mode === 'edit' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => setMode('edit')}
-        className="flex-1 gap-2"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Edit
-      </Button>
-    </div>
+    <Tabs responsive value={mode} onValueChange={(value) => setMode(value as FormBuilderMode)}>
+      <TabsList>
+        <TabsTrigger value="ai">
+          <Sparkles className="h-3.5 w-3.5" />
+          AI
+        </TabsTrigger>
+        <TabsTrigger value="edit">
+          <Pencil className="h-3.5 w-3.5" />
+          Edit
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   ) : null
 
   // Select content based on mode
-  const content = mode === 'ai' && hasAI ? aiContent : editContent
+  const modeContent = mode === 'ai' && hasAI ? aiContent : editContent
 
   if (collapsible && title) {
     return (
@@ -1333,9 +1379,10 @@ export function FormBuilder<T = any>({
           </div>
         </CardHeader>
         {!isCollapsed && (
-          <CardContent className="p-3 sm:p-6 pt-0">
+          <CardContent className="p-3 sm:p-6 pt-0 space-y-4">
             {modeToggle}
-            {content}
+            {regularPinnedFields}
+            {modeContent}
           </CardContent>
         )}
       </Card>
@@ -1343,10 +1390,11 @@ export function FormBuilder<T = any>({
   }
 
   return (
-    <div className={className}>
+    <div className={cn('space-y-4', className)}>
       {title && <h3 className="mb-3 text-base font-semibold sm:mb-4 sm:text-lg">{title}</h3>}
       {modeToggle}
-      {content}
+      {regularPinnedFields}
+      {modeContent}
     </div>
   )
 }
