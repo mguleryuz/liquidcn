@@ -1,12 +1,14 @@
 'use client'
 
-import { Loader2, Send, Sparkles } from 'lucide-react'
+import { Loader2, Mic, MicOff, Send, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import type { AIFormMessage } from 'tanstack-effect'
 
 import { Button } from '../../components/ui/button'
 import { Textarea } from '../../components/ui/textarea'
 import { cn } from '../../utils'
+import { useSpeechToText } from '../hooks/use-speech-to-text'
+import { AudioVisualizer } from './audio-visualizer'
 
 /**
  * @description Props for ChatView component
@@ -32,6 +34,17 @@ export interface ChatViewProps {
    * @description Placeholder text for input
    */
   placeholder?: string
+  /**
+   * @description Enable voice input (requires OPENAI_API_KEY on server)
+   * Developer must explicitly enable this when they've configured the API key
+   * @default false
+   */
+  enableVoice?: boolean
+  /**
+   * @description Custom endpoint for speech-to-text API
+   * @default '/api/speech-to-text'
+   */
+  voiceEndpoint?: string
 }
 
 /**
@@ -158,7 +171,14 @@ function MessageBubble({ message, isUser }: { message: AIFormMessage; isUser: bo
 }
 
 /**
- * @description Full chat UI for AI form filling
+ * @description Full chat UI for AI form filling with optional voice input
+ * @example
+ * <ChatView
+ *   messages={messages}
+ *   status={status}
+ *   onSend={handleSend}
+ *   enableVoice={true}  // Enable when OPENAI_API_KEY is configured
+ * />
  */
 export function ChatView({
   messages,
@@ -166,15 +186,88 @@ export function ChatView({
   onSend,
   className,
   placeholder = 'Describe what you want to fill in...',
+  enableVoice = false,
+  voiceEndpoint = '/api/speech-to-text',
 }: ChatViewProps) {
   const [input, setInput] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = React.useState(false)
+  const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null)
+  const audioChunksRef = React.useRef<Blob[]>([])
+
+  // Speech-to-text hook
+  const { transcribe, isLoading: isTranscribing } = useSpeechToText({
+    endpoint: voiceEndpoint,
+    onSuccess: (data) => {
+      if (data.text.trim()) {
+        // Append transcribed text to input
+        setInput((prev) => (prev ? `${prev} ${data.text}` : data.text))
+        textareaRef.current?.focus()
+      }
+    },
+  })
+
   // Auto-scroll to bottom when messages change
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Start recording
+  const startRecording = React.useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+
+      audioChunksRef.current = []
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      recorder.onstop = async () => {
+        // Stop all tracks
+        stream.getTracks().forEach((track) => track.stop())
+
+        // Create audio file from chunks
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
+
+          // Transcribe the audio
+          await transcribe({ audio: audioFile })
+        }
+      }
+
+      recorder.start()
+      setMediaRecorder(recorder)
+      setIsRecording(true)
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+    }
+  }, [transcribe])
+
+  // Stop recording
+  const stopRecording = React.useCallback(() => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop()
+    }
+    setIsRecording(false)
+    setMediaRecorder(null)
+  }, [mediaRecorder])
+
+  // Toggle recording
+  const toggleRecording = React.useCallback(() => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      startRecording()
+    }
+  }, [isRecording, startRecording, stopRecording])
 
   const handleSend = () => {
     if (input.trim() && status !== 'filling') {
@@ -193,6 +286,7 @@ export function ChatView({
 
   const isLoading = status === 'filling'
   const hasMessages = messages.length > 0
+  const isVoiceProcessing = isRecording || isTranscribing
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
@@ -224,21 +318,57 @@ export function ChatView({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Voice recording indicator */}
+      {enableVoice && isRecording && (
+        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t bg-muted/50">
+          <AudioVisualizer
+            isRecording={isRecording}
+            mediaRecorder={mediaRecorder}
+            width={200}
+            height={40}
+            barColor="hsl(var(--primary))"
+          />
+          <span className="text-xs text-muted-foreground">Recording...</span>
+        </div>
+      )}
+
+      {/* Transcribing indicator */}
+      {enableVoice && isTranscribing && !isRecording && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 border-t bg-muted/50">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Transcribing...</span>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="border-t p-4">
         <div className="flex items-center gap-2">
+          {/* Voice button */}
+          {enableVoice && (
+            <Button
+              onClick={toggleRecording}
+              disabled={isLoading || isTranscribing}
+              size="icon"
+              variant={isRecording ? 'destructive' : 'outline'}
+              className="shrink-0"
+              title={isRecording ? 'Stop recording' : 'Start voice input'}
+            >
+              {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
+
           <Textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            disabled={isLoading}
+            disabled={isLoading || isVoiceProcessing}
             className="min-h-11 max-h-32 resize-none"
           />
           <Button
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isVoiceProcessing}
             size="icon"
             className="shrink-0"
           >

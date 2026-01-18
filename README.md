@@ -17,9 +17,10 @@ A collection of reusable, accessible React UI components built with TypeScript, 
 **liquidcn** is a comprehensive component library featuring:
 
 - **UI Components**: Button, Card, Alert, Badge, Input, Textarea, Footer, PrettyAmount
-- **Client Components**: Dialog, Select, Switch, Tabs, Sonner (Toast), PrettyDate, ResizableNavbar, Slider
-- **Form Components**: FormBuilder (schema-driven forms with AI mode), ChatView (AI chat interface)
-- **Hooks**: Custom React hooks including `useCookieWithFallback`
+- **Client Components**: Dialog, Select, Switch, Tabs, Sonner (Toast), PrettyDate, ResizableNavbar, Slider, AudioVisualizer
+- **Form Components**: FormBuilder (schema-driven forms with AI mode), ChatView (AI chat interface with voice input)
+- **Hooks**: Custom React hooks including `useCookieWithFallback`, `useSpeechToText`
+- **Server Utilities**: `createSpeechToTextHandler()` for voice-to-text API routes
 - **Utilities**: `cn()` utility for className merging using clsx and tailwind-merge
 
 Bun + Npm + Typescript + Standard Version + Flat Config Linting + Husky + Commit / Release Pipeline
@@ -260,7 +261,7 @@ With AI mode enabled, the FormBuilder shows:
 
 ### ChatView Component
 
-The `ChatView` component provides a standalone chat UI for AI interactions:
+The `ChatView` component provides a standalone chat UI for AI interactions with optional voice input:
 
 ```tsx
 import { ChatView } from 'liquidcn/client'
@@ -271,15 +272,98 @@ function AIChat() {
   return (
     <ChatView
       messages={messages}
-      clarifications={[]}
       status="idle"
-      summary={null}
       onSend={(msg) => console.log('Send:', msg)}
-      onAnswer={(field, value) => console.log('Answer:', field, value)}
       placeholder="Ask me anything..."
+      enableVoice={true} // Enable when OPENAI_API_KEY is configured on server
     />
   )
 }
+```
+
+#### ChatView Props
+
+| Prop            | Type       | Default               | Description                                      |
+| --------------- | ---------- | --------------------- | ------------------------------------------------ |
+| `messages`      | `array`    | required              | Messages in the conversation                     |
+| `status`        | `string`   | required              | AI status: 'idle', 'filling', 'clarifying', etc. |
+| `onSend`        | `function` | required              | Callback when user sends a message               |
+| `placeholder`   | `string`   | -                     | Placeholder text for input                       |
+| `enableVoice`   | `boolean`  | `false`               | Enable voice input (requires server API key)     |
+| `voiceEndpoint` | `string`   | `/api/speech-to-text` | Custom endpoint for speech-to-text API           |
+
+### Speech-to-Text (Voice Input)
+
+LiquidCN provides speech-to-text capabilities for voice input in chat interfaces.
+
+#### Server Setup
+
+First, install the optional AI SDK dependencies:
+
+```bash
+bun add ai @ai-sdk/openai
+```
+
+Create a speech-to-text API route using the handler:
+
+```typescript
+// app/api/speech-to-text/route.ts
+import { createSpeechToTextHandler } from 'liquidcn'
+import { auth } from '@/auth'
+
+const handler = createSpeechToTextHandler({
+  authenticate: async () => {
+    const session = await auth()
+    return !!session?.user
+  },
+  defaultModel: 'gpt-4o-transcribe', // optional
+})
+
+export const POST = handler
+```
+
+Set the `OPENAI_API_KEY` environment variable on your server.
+
+#### Client Usage
+
+The `useSpeechToText` hook can be used standalone:
+
+```tsx
+import { useSpeechToText } from 'liquidcn/client'
+
+function VoiceInput() {
+  const { transcribe, isLoading, data, error } = useSpeechToText({
+    onSuccess: (result) => console.log('Transcribed:', result.text),
+    onError: (err) => console.error('Error:', err.error),
+  })
+
+  const handleRecord = async (audioFile: File) => {
+    await transcribe({ audio: audioFile })
+  }
+
+  return (
+    <div>
+      {isLoading && <p>Transcribing...</p>}
+      {data && <p>Result: {data.text}</p>}
+    </div>
+  )
+}
+```
+
+#### AudioVisualizer Component
+
+Display audio waveform during recording:
+
+```tsx
+import { AudioVisualizer } from 'liquidcn/client'
+
+;<AudioVisualizer
+  isRecording={isRecording}
+  mediaRecorder={mediaRecorder}
+  width={280}
+  height={60}
+  barColor="#a78bfa"
+/>
 ```
 
 ## Developing

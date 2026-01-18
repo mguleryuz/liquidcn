@@ -1067,6 +1067,17 @@ export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
    * @default '300px'
    */
   aiChatMinHeight?: string
+  /**
+   * Enable voice input in AI chat (requires OPENAI_API_KEY on server)
+   * Developer must explicitly enable this when the API key is configured
+   * @default false
+   */
+  enableVoice?: boolean
+  /**
+   * Custom endpoint for speech-to-text API
+   * @default '/api/speech-to-text'
+   */
+  voiceEndpoint?: string
 }
 
 /**
@@ -1086,6 +1097,8 @@ export function FormBuilder<T = any>({
   initialMode = 'ai',
   aiPlaceholder,
   aiChatMinHeight = '300px',
+  enableVoice = false,
+  voiceEndpoint,
 }: ExtendedFormBuilderProps<T>) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
   const [currentStep, setCurrentStep] = useState(0)
@@ -1272,6 +1285,8 @@ export function FormBuilder<T = any>({
         onSend={form.ai!.fill}
         placeholder={aiPlaceholder}
         className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
+        enableVoice={enableVoice}
+        voiceEndpoint={voiceEndpoint}
       />
     ) : null
 
@@ -1340,6 +1355,8 @@ export function FormBuilder<T = any>({
       onSend={form.ai!.fill}
       placeholder={aiPlaceholder}
       className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
+      enableVoice={enableVoice}
+      voiceEndpoint={voiceEndpoint}
     />
   ) : null
 
