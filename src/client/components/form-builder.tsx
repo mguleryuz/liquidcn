@@ -1068,6 +1068,12 @@ export interface ExtendedFormBuilderProps<T = any> extends FormBuilderProps<T> {
    */
   aiChatMinHeight?: string
   /**
+   * Maximum height for the chat view in AI mode
+   * When reached, the chat will scroll
+   * @example '400px', '50vh'
+   */
+  aiChatMaxHeight?: string
+  /**
    * Enable voice input in AI chat (requires OPENAI_API_KEY on server)
    * Developer must explicitly enable this when the API key is configured
    * @default false
@@ -1097,6 +1103,7 @@ export function FormBuilder<T = any>({
   initialMode = 'ai',
   aiPlaceholder,
   aiChatMinHeight = '300px',
+  aiChatMaxHeight,
   enableVoice = false,
   voiceEndpoint,
 }: ExtendedFormBuilderProps<T>) {
@@ -1287,6 +1294,7 @@ export function FormBuilder<T = any>({
         className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
         enableVoice={enableVoice}
         voiceEndpoint={voiceEndpoint}
+        maxHeight={aiChatMaxHeight}
       />
     ) : null
 
@@ -1357,6 +1365,7 @@ export function FormBuilder<T = any>({
       className={cn('border rounded-lg', `min-h-[${aiChatMinHeight}]`)}
       enableVoice={enableVoice}
       voiceEndpoint={voiceEndpoint}
+      maxHeight={aiChatMaxHeight}
     />
   ) : null
 
