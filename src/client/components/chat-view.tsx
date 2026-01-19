@@ -203,6 +203,7 @@ export function ChatView({
 
   // Voice recording state
   const [isRecording, setIsRecording] = React.useState(false)
+  const [isProcessingAudio, setIsProcessingAudio] = React.useState(false)
   const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null)
   const audioChunksRef = React.useRef<Blob[]>([])
 
@@ -258,26 +259,34 @@ export function ChatView({
         // Stop all tracks
         stream.getTracks().forEach((track) => track.stop())
 
+        // Clear recorder state after it's fully stopped
+        setMediaRecorder(null)
+
         // Create audio file from chunks
         if (audioChunksRef.current.length > 0) {
-          const actualMimeType = recorder.mimeType || mimeType || 'audio/webm'
-          const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
-
-          // Convert to WAV for maximum compatibility with OpenAI transcription
-          // This ensures iOS/Safari recordings work correctly
-          let audioFile: File
+          setIsProcessingAudio(true)
           try {
-            const wavBlob = await convertToWav(audioBlob)
-            audioFile = new File([wavBlob], 'recording.wav', { type: 'audio/wav' })
-          } catch (conversionError) {
-            // Fallback to original format if conversion fails
-            console.warn('WAV conversion failed, using original format:', conversionError)
-            const extension = getExtensionForMimeType(actualMimeType)
-            audioFile = new File([audioBlob], `recording.${extension}`, { type: actualMimeType })
-          }
+            const actualMimeType = recorder.mimeType || mimeType || 'audio/webm'
+            const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
 
-          // Transcribe the audio
-          await transcribe({ audio: audioFile })
+            // Convert to WAV for maximum compatibility with OpenAI transcription
+            // This ensures iOS/Safari recordings work correctly
+            let audioFile: File
+            try {
+              const wavBlob = await convertToWav(audioBlob)
+              audioFile = new File([wavBlob], 'recording.wav', { type: 'audio/wav' })
+            } catch (conversionError) {
+              // Fallback to original format if conversion fails
+              console.warn('WAV conversion failed, using original format:', conversionError)
+              const extension = getExtensionForMimeType(actualMimeType)
+              audioFile = new File([audioBlob], `recording.${extension}`, { type: actualMimeType })
+            }
+
+            // Transcribe the audio
+            await transcribe({ audio: audioFile })
+          } finally {
+            setIsProcessingAudio(false)
+          }
         }
       }
 
@@ -295,7 +304,8 @@ export function ChatView({
       mediaRecorder.stop()
     }
     setIsRecording(false)
-    setMediaRecorder(null)
+    // Note: setMediaRecorder(null) is now called in onstop callback
+    // to avoid race conditions
   }, [mediaRecorder])
 
   // Toggle recording
@@ -324,7 +334,7 @@ export function ChatView({
 
   const isLoading = status === 'filling'
   const hasMessages = messages.length > 0
-  const isVoiceProcessing = isRecording || isTranscribing
+  const isVoiceProcessing = isRecording || isProcessingAudio || isTranscribing
 
   return (
     <div className={cn('flex flex-col', className)}>
@@ -383,11 +393,13 @@ export function ChatView({
         </div>
       )}
 
-      {/* Transcribing indicator */}
-      {enableVoice && isTranscribing && !isRecording && (
+      {/* Processing/Transcribing indicator */}
+      {enableVoice && (isProcessingAudio || isTranscribing) && !isRecording && (
         <div className="flex items-center justify-center gap-2 px-4 py-2 border-t bg-muted/50">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-xs text-muted-foreground">Transcribing...</span>
+          <span className="text-xs text-muted-foreground">
+            {isProcessingAudio ? 'Processing audio...' : 'Transcribing...'}
+          </span>
         </div>
       )}
 
