@@ -30,6 +30,32 @@ export interface FieldMeta {
 }
 
 /**
+ * Check if a field is currently required (either statically or conditionally)
+ */
+function isFieldCurrentlyRequired(field: FormFieldDefinition, formData: any): boolean {
+  // Check static requirement
+  if (field.required) {
+    return true
+  }
+
+  // Check conditional requirement
+  if (field.requiredWhen) {
+    const { field: conditionField, value: expectedValue, notValue } = field.requiredWhen
+    const actualValue = getNestedValue(formData, conditionField)
+
+    // Support both "equals" (value) and "not equals" (notValue) conditions
+    if (expectedValue !== undefined) {
+      return actualValue === expectedValue
+    }
+    if (notValue !== undefined) {
+      return actualValue !== notValue
+    }
+  }
+
+  return false
+}
+
+/**
  * Field metadata resolver function type.
  * Used to dynamically resolve field labels and descriptions based on field path.
  * Common use cases: i18n translations, dynamic labels, context-aware descriptions.
@@ -73,6 +99,11 @@ export interface FormFieldProps extends BaseFormFieldProps {
    * getFieldMeta={(path) => ({ label: t(`fields.${path}.label`), description: t(`fields.${path}.description`) })}
    */
   getFieldMeta?: FieldMetaResolver
+  /**
+   * Full form data for evaluating conditional requirements (requiredWhen).
+   * When provided, enables dynamic required indicator based on other field values.
+   */
+  formData?: any
 }
 
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
@@ -100,6 +131,7 @@ export function FormField({
   label: labelOverride,
   description: descriptionOverride,
   getFieldMeta,
+  formData = {},
 }: FormFieldProps) {
   const [showDescription, setShowDescription] = useState(true)
 
@@ -234,10 +266,13 @@ export function FormField({
       <div className="flex min-w-0 flex-1 items-start gap-2">
         <Label
           htmlFor={field.key}
-          className={cn('min-w-0 flex-1 text-xs sm:text-sm', field.required && 'font-semibold')}
+          className={cn(
+            'min-w-0 flex-1 text-xs sm:text-sm',
+            isFieldCurrentlyRequired(field, formData) && 'font-semibold'
+          )}
         >
           <span className="wrap-break-word">{displayLabel || formatLabel(field.key)}</span>
-          {field.required ? (
+          {isFieldCurrentlyRequired(field, formData) ? (
             <span className="text-destructive">*</span>
           ) : field.type !== 'boolean' ? (
             <span className="text-muted-foreground ml-1 text-[10px]">(optional)</span>
@@ -271,13 +306,26 @@ export function FormField({
 /**
  * Helper function to check if a form is valid (including root-level errors)
  * This should be used instead of Object.keys(form.validationErrors).length === 0
+ * Also checks for conditionally required fields (requiredWhen) that are missing
  */
 export function isFormValid<T = any>(form: UseSchemaFormReturn<T>): boolean {
   // Check if there are any validation errors at all
   const hasErrors = Object.keys(form.validationErrors).length > 0
   // Also explicitly check for root error
   const hasRootError = !!form.validationErrors['_root']
-  return !hasErrors && !hasRootError
+
+  if (hasErrors || hasRootError) {
+    return false
+  }
+
+  // Also check for missing required fields (including conditionally required)
+  const missingFields = collectRequiredFields(form.fields, form.data)
+  const hasMissingRequired = missingFields.some(({ key }) => {
+    const value = getNestedValue(form.data, key)
+    return value === undefined || value === null || value === ''
+  })
+
+  return !hasMissingRequired
 }
 
 /**
@@ -300,8 +348,19 @@ function collectRequiredFields(
       }
     }
 
+    // Check if field is required (either statically or conditionally)
+    let isCurrentlyRequired = field.required
+    if (!isCurrentlyRequired && field.requiredWhen) {
+      const actualValue = getNestedValue(data, field.requiredWhen.field)
+      if (field.requiredWhen.value !== undefined) {
+        isCurrentlyRequired = actualValue === field.requiredWhen.value
+      } else if (field.requiredWhen.notValue !== undefined) {
+        isCurrentlyRequired = actualValue !== field.requiredWhen.notValue
+      }
+    }
+
     // Add required non-object/array fields
-    if (field.required && field.type !== 'object' && field.type !== 'array') {
+    if (isCurrentlyRequired && field.type !== 'object' && field.type !== 'array') {
       required.push({
         key: field.key,
         label: field.label || formatLabel(field.key),
@@ -626,6 +685,7 @@ export function DiscriminatedUnionSection({
                   label={conditionalMeta?.label}
                   description={conditionalMeta?.description}
                   getFieldMeta={getFieldMeta}
+                  formData={form.data}
                 />
               )
             })}
@@ -807,6 +867,7 @@ export function FormSection<T = unknown>({
             label={childMeta?.label}
             description={childMeta?.description}
             getFieldMeta={getFieldMeta}
+            formData={form.data}
           />
         )
       })
@@ -1197,6 +1258,7 @@ export function FormBuilder<T = any>({
         value={value}
         onChange={(value) => form.updateField(key, value)}
         error={form.validationErrors[key]}
+        formData={form.data}
       />
     )
   }
@@ -1221,6 +1283,7 @@ export function FormBuilder<T = any>({
                 value={value}
                 onChange={(v) => form.updateField(key, v)}
                 error={form.validationErrors[key]}
+                formData={form.data}
               />
             )
           })}
@@ -1336,6 +1399,7 @@ export function FormBuilder<T = any>({
               value={value}
               onChange={(v) => form.updateField(key, v)}
               error={form.validationErrors[key]}
+              formData={form.data}
             />
           )
         })}
