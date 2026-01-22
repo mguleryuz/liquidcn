@@ -1,7 +1,7 @@
 {
   "name": "liquidcn",
   "description": "Liquid Glass CN with secret sauce",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "license": "Apache-2.0",
   "sideEffects": false,
   "exports": {
@@ -56,6 +56,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@types/bun": "^1.2.22",
     "@types/debug": "^4.1.12",
+    "@types/react": "^19.2.9",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.7",
