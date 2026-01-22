@@ -816,7 +816,12 @@ export function FormSection<T = unknown>({
   ) => {
     return Object.entries(children)
       .filter(([, childField]) => childField && childField.key) // Filter out undefined fields
-      .sort(([, a], [, b]) => a.key.localeCompare(b.key))
+      .sort(([, a], [, b]) => {
+        const orderA = a.order ?? Infinity
+        const orderB = b.order ?? Infinity
+        if (orderA !== orderB) return orderA - orderB
+        return a.key.localeCompare(b.key)
+      })
       .map(([key, childField]) => {
         // Check if field has a condition and evaluate it
         if (childField.condition) {
@@ -1199,7 +1204,12 @@ export function FormBuilder<T = any>({
     .filter(
       ([key, field]) => field && field.key && !field.key.includes('.') && !hiddenFieldsSet.has(key)
     )
-    .sort(([, a], [, b]) => calculateFieldComplexity(a) - calculateFieldComplexity(b))
+    .sort(([, a], [, b]) => {
+      const orderA = a.order ?? Infinity
+      const orderB = b.order ?? Infinity
+      if (orderA !== orderB) return orderA - orderB
+      return calculateFieldComplexity(a) - calculateFieldComplexity(b)
+    })
 
   // Separate pinned fields from step fields
   const pinnedFieldsSet = new Set(pinnedFields)
