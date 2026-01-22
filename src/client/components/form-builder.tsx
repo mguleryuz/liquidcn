@@ -6,10 +6,12 @@ import {
   Info,
   Pencil,
   Plus,
+  Redo2,
   Sparkles,
   Trash2,
+  Undo2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type {
   FormBuilderProps,
   FormFieldDefinition,
@@ -1181,6 +1183,53 @@ export function FormBuilder<T = any>({
   // Determine if AI mode is actually available
   const hasAI = enableAIMode && form.ai
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault()
+          form.redo()
+        } else {
+          e.preventDefault()
+          form.undo()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [form.undo, form.redo])
+
+  // Toolbar (appears when there are changes)
+  const historyToolbar =
+    form.changeCount > 0 || form.canUndo || form.canRedo ? (
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Badge variant="secondary" className="text-xs tabular-nums">
+          {form.changeCount} {form.changeCount === 1 ? 'change' : 'changes'}
+        </Badge>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => form.undo()}
+          disabled={!form.canUndo}
+          aria-label="Undo"
+        >
+          <Undo2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => form.redo()}
+          disabled={!form.canRedo}
+          aria-label="Redo"
+        >
+          <Redo2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    ) : null
+
   // Determine if sections should be collapsed based on variant or explicit prop
   const defaultSectionsCollapsed = sectionsCollapsed ?? variant === 'compact'
 
@@ -1373,18 +1422,28 @@ export function FormBuilder<T = any>({
 
     // Wizard mode toggle
     const wizardModeToggle = hasAI ? (
-      <Tabs responsive value={mode} onValueChange={(value) => setMode(value as FormBuilderMode)}>
-        <TabsList>
-          <TabsTrigger value="ai">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI
-          </TabsTrigger>
-          <TabsTrigger value="edit">
-            <Pencil className="h-3.5 w-3.5" />
-            Edit
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center gap-2">
+        <Tabs
+          responsive
+          value={mode}
+          onValueChange={(value) => setMode(value as FormBuilderMode)}
+          className="flex-1"
+        >
+          <TabsList>
+            <TabsTrigger value="ai">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI
+            </TabsTrigger>
+            <TabsTrigger value="edit">
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {historyToolbar}
+      </div>
+    ) : historyToolbar ? (
+      <div className="flex justify-end">{historyToolbar}</div>
     ) : null
 
     return (
@@ -1445,18 +1504,28 @@ export function FormBuilder<T = any>({
 
   // Mode toggle buttons
   const modeToggle = hasAI ? (
-    <Tabs responsive value={mode} onValueChange={(value) => setMode(value as FormBuilderMode)}>
-      <TabsList>
-        <TabsTrigger value="ai">
-          <Sparkles className="h-3.5 w-3.5" />
-          AI
-        </TabsTrigger>
-        <TabsTrigger value="edit">
-          <Pencil className="h-3.5 w-3.5" />
-          Edit
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
+    <div className="flex items-center gap-2">
+      <Tabs
+        responsive
+        value={mode}
+        onValueChange={(value) => setMode(value as FormBuilderMode)}
+        className="flex-1"
+      >
+        <TabsList>
+          <TabsTrigger value="ai">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI
+          </TabsTrigger>
+          <TabsTrigger value="edit">
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {historyToolbar}
+    </div>
+  ) : historyToolbar ? (
+    <div className="flex justify-end">{historyToolbar}</div>
   ) : null
 
   // Select content based on mode
