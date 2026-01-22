@@ -8,6 +8,10 @@
       "import": "./dist/esm/client/index.js",
       "types": "./dist/types/client/index.d.ts"
     },
+    "./speech-to-text": {
+      "import": "./dist/esm/speech-to-text/index.js",
+      "types": "./dist/types/speech-to-text/index.d.ts"
+    },
     "./styles.css": "./dist/styles.css"
   }
 }
