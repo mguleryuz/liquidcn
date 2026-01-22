@@ -2,9 +2,12 @@
  * @description Server-side speech-to-text handler
  * Used by SDK consumers in their API routes
  *
- * @note This module requires optional peer dependencies: 'ai' and '@ai-sdk/openai'.
+ * @note This module requires optional dependencies: 'ai' and '@ai-sdk/openai'.
  * Install them with: bun add ai @ai-sdk/openai
  */
+
+import { openai } from '@ai-sdk/openai'
+import { experimental_transcribe as transcribe } from 'ai'
 
 import type {
   SpeechToTextErrorResponse,
@@ -30,12 +33,6 @@ export async function transcribeAudio(
   }
 ): Promise<SpeechToTextResponse> {
   const model = options?.model || DEFAULT_MODEL
-
-  // Dynamic imports to avoid bundler errors when optional deps are not installed
-  const [{ openai }, { experimental_transcribe: transcribe }] = await Promise.all([
-    import('@ai-sdk/openai'),
-    import('ai'),
-  ])
 
   const result = await transcribe({
     model: openai.transcription(model),
