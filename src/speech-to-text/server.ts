@@ -19,7 +19,64 @@ import type {
 const DEFAULT_MODEL: TranscriptionModel = 'gpt-4o-transcribe'
 
 /**
+ * @description Transcribe audio using streaming via direct OpenAI API call.
+ * Collects streamed transcript events and returns the full text.
+ */
+async function transcribeStreaming(
+  audioData: Uint8Array,
+  options?: { model?: TranscriptionModel; language?: string }
+): Promise<SpeechToTextResponse> {
+  const model = options?.model || DEFAULT_MODEL
+  const formData = new FormData()
+  const audioFile = new File([Buffer.from(audioData)], 'audio.wav', { type: 'audio/wav' })
+  formData.append('file', audioFile)
+  formData.append('model', model)
+  formData.append('stream', 'true')
+  formData.append('response_format', 'text')
+  if (options?.language) formData.append('language', options.language)
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    throw new Error(`OpenAI streaming transcription failed: ${response.status}`)
+  }
+
+  // Collect streamed text chunks
+  const reader = response.body?.getReader()
+  if (!reader) throw new Error('No response body for streaming transcription')
+
+  const decoder = new TextDecoder()
+  let text = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    const chunk = decoder.decode(value, { stream: true })
+    // SSE format: parse "data: {...}" lines
+    for (const line of chunk.split('\n')) {
+      if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+        try {
+          const parsed = JSON.parse(line.slice(6))
+          if (parsed.text) text += parsed.text
+        } catch {
+          // Plain text streaming - append directly
+          text += line.slice(6)
+        }
+      }
+    }
+  }
+
+  return { text: text.trim() }
+}
+
+/**
  * @description Core function to transcribe audio using OpenAI
+ * Uses lightweight compression formatting (no segments/timestamps) for minimal response size.
+ * Falls back to streaming if the standard call fails.
  * @param audioData - Audio data as Uint8Array
  * @param options - Transcription options
  * @returns Transcription result
@@ -34,22 +91,25 @@ export async function transcribeAudio(
 ): Promise<SpeechToTextResponse> {
   const model = options?.model || DEFAULT_MODEL
 
-  const result = await transcribe({
-    model: openai.transcription(model),
-    audio: audioData,
-    providerOptions: {
-      openai: {
-        ...(options?.language && { language: options.language }),
-        timestampGranularities: ['segment'],
+  try {
+    // Lightweight compression formatting: no timestampGranularities, just text output
+    const result = await transcribe({
+      model: openai.transcription(model),
+      audio: audioData,
+      providerOptions: {
+        openai: {
+          ...(options?.language && { language: options.language }),
+        },
       },
-    },
-  })
+    })
 
-  return {
-    text: result.text,
-    segments: result.segments,
-    duration: result.durationInSeconds,
-    language: result.language,
+    return {
+      text: result.text,
+      language: result.language,
+    }
+  } catch {
+    // Fallback: use streaming transcription via direct API call
+    return transcribeStreaming(audioData, options)
   }
 }
 
