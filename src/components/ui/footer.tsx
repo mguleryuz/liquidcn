@@ -1,4 +1,3 @@
-import { Heart } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
 
 export interface FooterLink {
@@ -10,9 +9,7 @@ export interface FooterLink {
 
 export interface FooterProps {
   links: FooterLink[]
-  builtByText?: ReactNode
-  builtByBrand?: string
-  showLogo?: boolean
+  right?: ReactNode
   linkComponent?: ComponentType<{
     href: string
     target?: string
@@ -25,9 +22,7 @@ export interface FooterProps {
 
 export function Footer({
   links,
-  builtByText = 'Built by',
-  builtByBrand = 'Levr',
-  showLogo = true,
+  right,
   linkComponent: LinkComponent = ({ href, ...props }: any) => <a href={href} {...props} />,
 }: FooterProps) {
   return (
@@ -54,13 +49,7 @@ export function Footer({
             ))}
           </nav>
 
-          {/* Built by */}
-          {showLogo && (
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              {builtByText} <b className="text-primary">{builtByBrand}</b> team with{' '}
-              <Heart className="h-4 w-4 text-red-500 fill-red-500" />
-            </p>
-          )}
+          {right}
         </div>
       </div>
     </footer>
