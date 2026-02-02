@@ -2,7 +2,7 @@
 
 import { Info, Loader2, Mic, MicOff, Send, Sparkles } from 'lucide-react'
 import * as React from 'react'
-import type { AIFormMessage } from 'tanstack-effect'
+import type { AIFormMessage } from 'tanstack-effect/client'
 
 import { Button } from '../../components/ui/button'
 import { Textarea } from '../../components/ui/textarea'
