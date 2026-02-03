@@ -12,14 +12,14 @@ import {
   Undo2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { formatLabel, getNestedValue } from 'tanstack-effect'
 import type {
   FormBuilderProps,
   FormFieldDefinition,
   FormFieldProps as BaseFormFieldProps,
   NestedFormProps,
   UseSchemaFormReturn,
-} from 'tanstack-effect'
-import { formatLabel, getNestedValue } from 'tanstack-effect'
+} from 'tanstack-effect/client'
 
 import { ChatView } from './chat-view'
 
@@ -1086,6 +1086,88 @@ export function FormSection<T = unknown>({
 }
 
 /**
+ * Props for FormHistoryToolbar
+ */
+export interface FormHistoryToolbarProps<T = any> {
+  /**
+   * The form instance from useSchemaForm
+   */
+  form: UseSchemaFormReturn<T>
+  /**
+   * Optional className for the container
+   */
+  className?: string
+}
+
+/**
+ * Standalone history toolbar component for undo/redo functionality.
+ * Use this when you're using FormField/FormSection directly instead of FormBuilder.
+ *
+ * @example
+ * ```tsx
+ * const form = useSchemaForm({ schema: MySchema })
+ *
+ * return (
+ *   <div>
+ *     <FormHistoryToolbar form={form} />
+ *     <FormField field={form.fields.name} ... />
+ *   </div>
+ * )
+ * ```
+ */
+export function FormHistoryToolbar<T = any>({ form, className }: FormHistoryToolbarProps<T>) {
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault()
+          form.redo()
+        } else {
+          e.preventDefault()
+          form.undo()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [form.undo, form.redo])
+
+  // Don't render if there are no changes and nothing to undo/redo
+  if (form.changeCount === 0 && !form.canUndo && !form.canRedo) {
+    return null
+  }
+
+  return (
+    <div className={cn('flex shrink-0 items-center gap-1.5', className)}>
+      <Badge variant="secondary" className="text-xs tabular-nums">
+        {form.changeCount} {form.changeCount === 1 ? 'change' : 'changes'}
+      </Badge>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 w-7 p-0"
+        onClick={() => form.undo()}
+        disabled={!form.canUndo}
+        aria-label="Undo"
+      >
+        <Undo2 className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 w-7 p-0"
+        onClick={() => form.redo()}
+        disabled={!form.canRedo}
+        aria-label="Redo"
+      >
+        <Redo2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  )
+}
+
+/**
  * Form builder mode for AI or Edit
  */
 export type FormBuilderMode = 'ai' | 'edit'
@@ -1183,52 +1265,8 @@ export function FormBuilder<T = any>({
   // Determine if AI mode is actually available
   const hasAI = enableAIMode && form.ai
 
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-        if (e.shiftKey) {
-          e.preventDefault()
-          form.redo()
-        } else {
-          e.preventDefault()
-          form.undo()
-        }
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [form.undo, form.redo])
-
-  // Toolbar (appears when there are changes)
-  const historyToolbar =
-    form.changeCount > 0 || form.canUndo || form.canRedo ? (
-      <div className="flex shrink-0 items-center gap-1.5">
-        <Badge variant="secondary" className="text-xs tabular-nums">
-          {form.changeCount} {form.changeCount === 1 ? 'change' : 'changes'}
-        </Badge>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => form.undo()}
-          disabled={!form.canUndo}
-          aria-label="Undo"
-        >
-          <Undo2 className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => form.redo()}
-          disabled={!form.canRedo}
-          aria-label="Redo"
-        >
-          <Redo2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    ) : null
+  // History toolbar element (used in multiple places)
+  const historyToolbar = <FormHistoryToolbar form={form} />
 
   // Determine if sections should be collapsed based on variant or explicit prop
   const defaultSectionsCollapsed = sectionsCollapsed ?? variant === 'compact'
