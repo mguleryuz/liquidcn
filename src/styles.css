@@ -407,7 +407,6 @@
 
 /* Base liquid-glass effect for all toasts */
 [data-sonner-toaster] [data-sonner-toast].liquid-glass {
-  position: relative !important;
   overflow: hidden !important;
   border: none !important;
   backdrop-filter: blur(200px) saturate(2) contrast(1.1) !important;
@@ -469,6 +468,20 @@
     ),
     radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 70%),
     radial-gradient(ellipse 40% 30% at 85% 100%, rgba(255, 255, 255, 0.06) 0%, transparent 60%) !important;
+}
+
+/* Override Sonner's default rule that hides content on non-front collapsed toasts
+   ([data-expanded='false'][data-front='false'][data-styled='true'] > * { opacity: 0 }).
+   For liquid-glass toasts, we always want content visible since the glass effect
+   provides enough visual distinction between stacked toasts. */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass[data-expanded='false'][data-front='false'] > * {
+  opacity: 1 !important;
+}
+
+/* Toast content wrapper - must be above refraction overlay (::before z-index: 1). */
+[data-sonner-toaster] [data-sonner-toast].liquid-glass [data-content] {
+  position: relative !important;
+  z-index: 2 !important;
 }
 
 /* Toast text colors for better contrast on glass */
