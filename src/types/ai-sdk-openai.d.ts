@@ -6,6 +6,8 @@
 declare module '@ai-sdk/openai' {
   export interface OpenAIProvider {
     transcription(model: string): unknown
+    textEmbedding(model: string): unknown
+    [key: string]: unknown
   }
 
   export const openai: OpenAIProvider

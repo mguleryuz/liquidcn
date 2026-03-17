@@ -12,7 +12,7 @@ const DEBOUNCE_MS = 300
 const TSGO_ARGS = ['--noEmit', '--pretty']
 
 // State
-let debounceTimer: Timer | null = null
+let debounceTimer: NodeJS.Timeout | null = null
 let isRunning = false
 
 // ANSI color codes
